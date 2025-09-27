@@ -164,7 +164,8 @@ function shuffleArray(array) {
   };
   
   exports.getCourses = async (req, res) => {
-    const { role, name } = req.cookies;
+    // const { role, name } = req.cookies;
+    const { role, name } = req.user;
     if (!name || !role) return res.status(401).send("Unauthorized");
   
     try {
