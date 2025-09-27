@@ -1,0 +1,103 @@
+/* ===== DOCX Preview Styles ===== */
+.docx-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
+  background: #f8f9fa;
+  overflow: auto;
+}
+
+/* Bungkus area docx biar bisa scroll */
+.docx-container {
+  max-height: 70vh;   /* biar ga melebihi tinggi layar */
+  overflow-y: auto;   /* aktifin scroll vertikal */
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #f8f9fa;
+}
+
+/* Styling isi docx */
+.docx {
+  background: #fff;
+  padding: 2rem;
+  margin: auto;
+  max-width: 800px;
+  width: 100%;
+  box-shadow: 0 0 10px rgba(0,0,0,0.05);
+  color: #111;
+  font-family: "Times New Roman", Georgia, serif;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+
+/* ===== Paragraf ===== */
+.docx p {
+  margin: 0 0 0.75rem 0;
+}
+
+/* ===== Heading ===== */
+.docx h1, .docx h2, .docx h3, 
+.docx h4, .docx h5, .docx h6 {
+  font-weight: bold;
+  margin: 1rem 0 0.5rem 0;
+  line-height: 1.3;
+}
+
+.docx h1 { font-size: 2rem; }
+.docx h2 { font-size: 1.6rem; }
+.docx h3 { font-size: 1.4rem; }
+
+/* ===== List ===== */
+.docx ul, .docx ol {
+  margin: 0.5rem 0 0.5rem 2rem;
+  padding: 0;
+}
+
+.docx li {
+  margin: 0.25rem 0;
+}
+
+/* ===== Table ===== */
+.docx table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.docx table td,
+.docx table th {
+  border: 1px solid #ccc;
+  padding: 6px 10px;
+  vertical-align: top;
+}
+
+.docx table th {
+  background: #f1f1f1;
+  font-weight: bold;
+}
+
+/* ===== Gambar ===== */
+.docx img {
+  max-width: 100%;
+  height: auto;
+  margin: 0.5rem 0;
+  display: block;
+}
+
+/* ===== Blockquote ===== */
+.docx blockquote {
+  border-left: 3px solid #ccc;
+  margin: 1rem 0;
+  padding-left: 1rem;
+  color: #555;
+  font-style: italic;
+}
+
+/* ===== Highlight parsing ===== */
+.bg-green-200 {
+  background-color: #bbf7d0 !important;
+  padding: 0.1rem 0.2rem;
+  border-radius: 3px;
+}

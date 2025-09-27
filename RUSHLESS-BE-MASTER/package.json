@@ -1,0 +1,41 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "canvas": "^2.11.2",
+    "cheerio": "^1.1.2",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "exceljs": "^4.4.0",
+    "express": "^5.1.0",
+    "fs": "^0.0.1-security",
+    "gm": "^1.25.1",
+    "jimp": "^0.22.12",
+    "jsonwebtoken": "^9.0.2",
+    "mammoth": "^1.9.1",
+    "morgan": "^1.10.1",
+    "multer": "^2.0.1",
+    "mysql2": "^3.14.1",
+    "path": "^0.12.7",
+    "pdf-image": "^2.0.0",
+    "pdf-lib": "^1.17.1",
+    "pdf-parse": "^1.1.1",
+    "pdfjs-dist": "^2.16.105",
+    "tesseract.js": "^5.1.0",
+    "unzipper": "^0.12.3",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
