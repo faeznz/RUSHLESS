@@ -69,6 +69,9 @@ async function registerSSEPeserta(req, res) {
     [kelasList]
   );
 
+  console.log(kelasList);
+  console.log(allUsers);
+
   // masukkan semua user dengan status default inactive
   for (const u of allUsers) {
     if (!get(u.id)) {

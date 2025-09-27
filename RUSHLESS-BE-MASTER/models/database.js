@@ -143,6 +143,7 @@ ${DB_NAME}
         soal_id INT NOT NULL,
         jawaban TEXT,
         attemp INT NOT NULL,
+        flag INT DEFAULT 0,
         durasi_pengerjaan INT DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE KEY unique_jawaban (user_id, course_id, soal_id, attemp)
@@ -153,7 +154,7 @@ ${DB_NAME}
       CREATE TABLE IF NOT EXISTS questions (
         id INT AUTO_INCREMENT PRIMARY KEY,
         course_id INT NOT NULL,
-        soal VARCHAR(255) NOT NULL,
+        soal JSON NOT NULL,
         opsi JSON NOT NULL,
         jawaban VARCHAR(255),
         tipe_soal VARCHAR(20) DEFAULT 'pilihan_ganda',

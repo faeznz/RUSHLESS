@@ -38,6 +38,7 @@ export default function ExamQuestion() {
 
       localStorage.setItem(`ujian_started_${courseId}_${userId}`, "1");
       setShowStartPopup(false);
+      window.location.reload();
     } catch (err) {
       console.error("❌ Gagal mulai ujian:", err);
       alert("Gagal memulai ujian, coba lagi.");

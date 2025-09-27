@@ -24,7 +24,8 @@ function shuffleArray(array) {
       logPengerjaan, analisisJawaban
     } = req.body;
   
-    const { name, role } = req.cookies;
+    // const { name, role } = req.cookies;
+    const { role, name } = req.user;
     if (!name || !role) return res.status(401).send("Unauthorized");
   
     try {
@@ -235,7 +236,8 @@ function shuffleArray(array) {
   
     exports.getCourseById = async (req, res) => {
     const courseId = req.params.id;
-    const { role, name } = req.cookies; // Get name for student class lookup
+    // const { role, name } = req.cookies; 
+    const { role, name } = req.user;
 
     try {
       const pool = await poolPromise;
@@ -634,7 +636,8 @@ if (!userId || isNaN(userId)) {
   
   exports.getQuestions = async (req, res) => {
     const course_id = req.params.id;
-    const userRole = req.cookies?.role;
+    const { role, name } = req.user;
+    const userRole = role;
   
     try {
       const db = await dbPromise;
