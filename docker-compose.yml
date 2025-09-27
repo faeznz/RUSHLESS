@@ -1,39 +1,36 @@
 version: "3.9"
 
 services:
-  backend1:
-    build: ./RUSHLESS-BE-MASTER
-    container_name: RUSHLESS-BE-MASTER
+  # ---------- Backend Master ----------
+  rushless-be-master:
+    build:
+      context: ./RUSHLESS-BE-MASTER
+      dockerfile: Dockerfile
+    container_name: rushless-be-master
+    ports:
+      - "5001:5001"
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+
+  # ---------- Backend Exam ----------
+  rushless-be-exam:
+    build:
+      context: ./RUSHLESS-BE-EXAM
+      dockerfile: Dockerfile
+    container_name: rushless-be-exam
     ports:
       - "5000:5000"
-    volumes:
-      - ./RUSHLESS-BE-MASTER:/app
+    restart: unless-stopped
     environment:
-      - NODE_ENV=production
+      NODE_ENV: production
 
-  backend2:
-    build: ./RUSHLESS-BE-EXAM
-    container_name: RUSHLESS-BE-EXAM
+  # ---------- Frontend React ----------
+  rushless-fe:
+    build:
+      context: ./RUSHLESS-FE
+      dockerfile: Dockerfile
+    container_name: rushless-fe
     ports:
-      - "4040:4040"
-    volumes:
-      - ./RUSHLESS-BE-EXAM:/app
-    environment:
-      - NODE_ENV=production
-
-  frontend:
-    build: ./RUSHLESS-FE
-    container_name: RUSHLESS-FE
-    ports:
-      - "80:80"
-    volumes:
-      - ./RUSHLESS-FE:/app
-
-  watchtower:
-    image: containrrr/watchtower
-    container_name: watchtower
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - WATCHTOWER_POLL_INTERVAL=60
-
+      - "3000:80"
+    restart: unless-stopped

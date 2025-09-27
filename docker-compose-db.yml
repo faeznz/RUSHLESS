@@ -1,0 +1,24 @@
+version: "3.9"
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: rushless-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: rushless_db
+      MYSQL_USER: rushless
+      MYSQL_PASSWORD: rushpass
+    ports:
+      - "3306:3306"
+    volumes:
+      - rushless-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  rushless-db-data:

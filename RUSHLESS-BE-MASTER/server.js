@@ -23,7 +23,10 @@ async function setupCors() {
     } else {
       // Fallback jika file tidak ada
       allowedOrigins = ["http://localhost:3000"];
-      fs.writeFileSync(corsOriginsPath, JSON.stringify(allowedOrigins, null, 2));
+      fs.writeFileSync(
+        corsOriginsPath,
+        JSON.stringify(allowedOrigins, null, 2)
+      );
     }
   } catch (error) {
     console.error("❌ Gagal membaca atau membuat file CORS origins:", error);
@@ -32,18 +35,20 @@ async function setupCors() {
 
   console.log("ℹ️ Origin CORS yang diizinkan:", allowedOrigins);
 
-  app.use(cors({
-    origin: (origin, callback) => {
-      // Izinkan request tanpa origin (misal: dari Postman, curl)
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        console.warn(`🚫 Origin ditolak: ${origin}`);
-        callback(new Error("Origin tidak diizinkan oleh CORS"));
-      }
-    },
-    credentials: true
-  }));
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        // Izinkan request tanpa origin (misal: dari Postman, curl)
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          console.warn(`🚫 Origin ditolak: ${origin}`);
+          callback(new Error("Origin tidak diizinkan oleh CORS"));
+        }
+      },
+      credentials: true,
+    })
+  );
 }
 
 // 🔹 Inisialisasi aplikasi
@@ -53,8 +58,13 @@ async function setupCors() {
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ extended: true, limit: "50mb" }));
   app.use(cookieParser());
-  app.use("/api/uploads", express.static(path.join(__dirname, "public", "uploads")));
-  app.use(morgan(":method :url :status :res[content-length] - :response-time ms"));
+  app.use(
+    "/api/uploads",
+    express.static(path.join(__dirname, "public", "uploads"))
+  );
+  app.use(
+    morgan(":method :url :status :res[content-length] - :response-time ms")
+  );
 
   // === ROUTES ===
   const authRoutes = require("./routes/authRoutes");
@@ -106,7 +116,6 @@ async function setupCors() {
   setInterval(cleanUploads, 24 * 60 * 60 * 1000);
 
   app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server jalan di http://0.0.0.0:${PORT}`);
-});
-})
-();
+    console.log(`Server jalan di http://0.0.0.0:${PORT}`);
+  });
+})();

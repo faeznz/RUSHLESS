@@ -12,7 +12,7 @@ RUN npm install --production
 COPY . .
 
 # Expose port sesuai server.js
-EXPOSE 4040
+EXPOSE 5001
 
 # Jalankan server.js
 CMD ["node", "server.js"]
