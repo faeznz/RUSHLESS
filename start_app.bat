@@ -9,4 +9,4 @@ REM Buka BE-MASTER
 start cmd /k "cd /d %BASEDIR%\RUSHLESS-BE-MASTER && npm install && node server.js"
 
 REM Buka FE
-start cmd /k "cd /d %BASEDIR%\RUSHLESS-FE && npm install && npm start"
+start cmd /k "cd /d %BASEDIR%\RUSHLESS-FE && set PORT=4000 && npm install && npm start"
