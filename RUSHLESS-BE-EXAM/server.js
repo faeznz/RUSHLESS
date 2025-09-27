@@ -13,7 +13,7 @@ app.use((req, res, next) => {
   next();
 });
 
-const allowedOrigins = ["http://localhost:3000", "http://192.168.0.12:3000", "http://localhost:4000"];
+const allowedOrigins = ["http://localhost:3000", "http://192.168.0.12:3000", "http://localhost:4000", "http://192.168.2.210:4000", "https://ujian.sensrvr.my.id"];
 
 const corsOptions = {
   origin: function (origin, callback) {

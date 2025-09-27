@@ -13,7 +13,7 @@ const upload = multer({ storage });
 const authMiddleware = require("../middlewares/authMiddleware");
 const onlyRole = require("../middlewares/onlyRole");
 
-// router.use(authMiddleware);
+router.use(authMiddleware);
 
 // --- Course Umum
 router.post("/", onlyRole(["admin", "guru"]), courseController.createCourse);

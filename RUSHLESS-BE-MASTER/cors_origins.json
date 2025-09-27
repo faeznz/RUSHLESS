@@ -4,5 +4,7 @@
   "https://dev1.faeznz.my.id",
   "http://192.168.0.12:3000",
   "http://192.168.0.6:3000",
-  "http://localhost:4000"
+  "http://localhost:4000",
+  "http://192.168.2.210:4000",
+  "https://ujian.sensrvr.my.id"
 ]
