@@ -1,0 +1,9 @@
+ALTER USER 'rushless'@'localhost' IDENTIFIED BY 'rusHless567';
+ALTER USER 'rushless'@'%' IDENTIFIED BY 'rusHless567';
+FLUSH PRIVILEGES;
+
+SELECT user, host, plugin FROM mysql.user WHERE user='rushless';
+
+UPDATE mysql.user SET plugin='mysql_native_password' WHERE user='rushless';
+FLUSH PRIVILEGES;
+
