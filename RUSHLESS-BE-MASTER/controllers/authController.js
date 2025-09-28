@@ -35,7 +35,9 @@ exports.login = async (req, res) => {
     );
 
     const isOnline = sessions.length > 0 && sessions[0].status === "online";
-    if (isOnline) {
+
+    // ❌ Batasi login jika online, kecuali role admin
+    if (isOnline && user.role !== "admin") {
       return res.status(403).json({
         message: "Tidak bisa login, akun sedang aktif di perangkat lain.",
       });
@@ -52,7 +54,6 @@ exports.login = async (req, res) => {
     );
 
     // 5. Buat Access Token dan Refresh Token
-        // 5. Buat Access Token (dikirim ke frontend) dan Refresh Token (disimpan di httpOnly cookie)
     const accessToken = jwt.sign(
       {
         userId: user.id,
@@ -60,31 +61,29 @@ exports.login = async (req, res) => {
         role: user.role,
       },
       JWT_SECRET,
-      { expiresIn: "15m" } // Masa berlaku singkat
+      { expiresIn: "15m" }
     );
 
     const refreshToken = jwt.sign(
-      {
-        userId: user.id,
-      },
+      { userId: user.id },
       process.env.REFRESH_TOKEN_SECRET,
-      { expiresIn: "7d" } // Masa berlaku panjang
+      { expiresIn: "7d" }
     );
 
-    // Simpan refresh token di httpOnly cookie, aman dari akses JavaScript
-    res.cookie('refreshToken', refreshToken, {
+    // Simpan refresh token di httpOnly cookie
+    res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 hari
     });
 
-    // Kirim accessToken ke frontend untuk disimpan di cookie 'token' oleh browser
+    // Kirim accessToken ke frontend
     res.json({
       user_id: user.id,
       name: user.name,
       role: user.role,
-      token: accessToken, 
+      token: accessToken,
     });
   } catch (err) {
     console.error("❌ Login error:", err.message);
