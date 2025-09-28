@@ -28,7 +28,21 @@ exports.getUserExamResult = async (req, res) => {
       ORDER BY q.id ASC
     `, [userId, attemp, userId, courseId]);
 
-    res.json(rows);
+    // hitung jumlah benar & salah
+    let jumlah_benar = 0;
+    let jumlah_salah = 0;
+
+    rows.forEach(r => {
+      if (r.jawaban_siswa !== null && r.jawaban_siswa !== undefined) {
+        if (r.jawaban_siswa.toString().trim().toUpperCase() === r.jawaban_benar) {
+          jumlah_benar++;
+        } else {
+          jumlah_salah++;
+        }
+      }
+    });
+
+    res.json({ data: rows, summary: { benar: jumlah_benar, salah: jumlah_salah } });
   } catch (error) {
     console.error("❌ Error getUserExamResult:", error);
     res.status(500).json({ error: "Gagal mengambil hasil ujian." });
@@ -41,7 +55,7 @@ exports.getJawabanDetail = async (req, res) => {
     const db = await dbpromise;
 
     const [rows] = await db.execute(
-      `SELECT js.soal_id, js.jawaban AS jawaban_siswa, q.jawaban AS jawaban_benar
+      `SELECT js.soal_id, js.jawaban AS jawaban_siswa, TRIM(UPPER(q.jawaban)) AS jawaban_benar
        FROM jawaban_siswa js
        JOIN questions q ON js.soal_id = q.id
        WHERE js.course_id = ? AND js.user_id = ? AND js.attemp = ?
@@ -49,9 +63,17 @@ exports.getJawabanDetail = async (req, res) => {
       [courseId, userId, attempt]
     );
 
-    const detail_jawaban = rows.map(row => row.jawaban_siswa === row.jawaban_benar);
+    let jumlah_benar = 0;
+    let jumlah_salah = 0;
 
-    res.json({ detail_jawaban });
+    const detail_jawaban = rows.map(row => {
+      const isBenar = row.jawaban_siswa?.toString().trim().toUpperCase() === row.jawaban_benar;
+      if (isBenar) jumlah_benar++;
+      else jumlah_salah++;
+      return isBenar;
+    });
+
+    res.json({ detail_jawaban, summary: { benar: jumlah_benar, salah: jumlah_salah } });
   } catch (err) {
     console.error("❌ Gagal ambil jawaban detail:", err);
     res.status(500).json({ error: 'Gagal ambil jawaban detail' });

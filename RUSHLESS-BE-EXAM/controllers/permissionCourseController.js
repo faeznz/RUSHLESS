@@ -21,13 +21,33 @@ async function checkPermission(req, res) {
       return res.json({ allowed: true, message: "Admin memiliki akses penuh" });
     }
 
-    // Ambil kelas course
+    // Ambil kelas course + tanggal mulai
     const [courseResult] = await db.query(
-      "SELECT kelas FROM courses WHERE id = ?",
+      "SELECT kelas, tanggal_mulai FROM courses WHERE id = ?",
       [courseId]
     );
     if (courseResult.length === 0) {
       return res.json({ allowed: false, message: "Course tidak ditemukan" });
+    }
+
+    const { kelas: courseKelas, tanggal_mulai } = courseResult[0];
+
+    // ✅ Validasi tanggal mulai
+    const now = new Date();
+    const startDate = new Date(tanggal_mulai);
+    console.log(startDate, now);
+    if (isNaN(startDate.getTime())) {
+      return res.json({
+        allowed: false,
+        message: "Format tanggal mulai pada course tidak valid",
+      });
+    }
+    if (startDate > now) {
+      // belum waktunya ujian
+      return res.json({
+        allowed: false,
+        message: `Ujian ini baru bisa diakses mulai ${startDate.toLocaleString("id-ID")}`,
+      });
     }
 
     // Cek apakah ada soal untuk course ini
@@ -36,31 +56,39 @@ async function checkPermission(req, res) {
       [courseId]
     );
     if (questionResult[0].total === 0) {
-      return res.json({ allowed: false, message: "Course ini belum memiliki soal" });
+      return res.json({
+        allowed: false,
+        message: "Course ini belum memiliki soal",
+      });
     }
 
     // Pastikan courseKelasList berupa array
-    let courseKelasList = courseResult[0].kelas;
+    let courseKelasList = courseKelas;
     if (typeof courseKelasList === "string") {
       try {
         courseKelasList = JSON.parse(courseKelasList);
       } catch (e) {
         console.error("Gagal parse kelas course:", e);
-        return res.json({ allowed: false, message: "Format kelas pada course tidak valid" });
+        return res.json({
+          allowed: false,
+          message: "Format kelas pada course tidak valid",
+        });
       }
     }
 
     // Cek apakah userKelas ada di courseKelasList
     const hasPermission = courseKelasList.includes(userKelas);
-
     if (!hasPermission) {
       return res.json({
         allowed: false,
-        message: `User dari kelas ${userKelas} tidak memiliki akses ke course ini`
+        message: `User dari kelas ${userKelas} tidak memiliki akses ke course ini`,
       });
     }
 
-    return res.json({ allowed: true, message: "User diizinkan mengikuti ujian" });
+    return res.json({
+      allowed: true,
+      message: "User diizinkan mengikuti ujian",
+    });
   } catch (err) {
     console.error("Error checkPermission:", err);
     return res

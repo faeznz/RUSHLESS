@@ -120,6 +120,13 @@ async function selesaiUjian(req, res) {
     return res.status(400).json({ message: "courseId & userId required" });
 
   try {
+    // 0. Cek apakah hasil boleh ditampilkan
+    const [courseRows] = await db.query(
+      `SELECT tampilkanHasil FROM courses WHERE id=?`,
+      [courseId]
+    );
+    const tampilkanHasil = courseRows[0]?.tampilkanHasil || false;
+
     // 1. Hitung jumlah soal
     const [rowsSoal] = await db.query(
       `SELECT COUNT(*) as total FROM questions WHERE course_id=?`,
@@ -151,7 +158,7 @@ async function selesaiUjian(req, res) {
     const old = get(userId) || {};
     set(userId, { ...old, status: "sudah_mengerjakan", end_time });
 
-    // update DB
+    // update DB status ujian
     await db.query(
       `UPDATE status_ujian 
        SET status='sudah_mengerjakan', end_time=? 
@@ -159,10 +166,22 @@ async function selesaiUjian(req, res) {
       [end_time, userId, courseId]
     );
 
+    // 🔥 hapus template_question milik user & course ini
+    await db.query(
+      `DELETE FROM template_question WHERE user_id=? AND course_id=?`,
+      [userId, courseId]
+    );
+
+    // kirim sinkronisasi ke client & penguji
     sendToUser(userId, { type: "sync", data: get(userId) });
     broadcastPenguji(courseId);
 
-    res.json({ message: "Ujian selesai", end_time });
+    // kembalikan response dengan flag tampilkanHasil
+    res.json({
+      message: "Ujian selesai",
+      end_time,
+      tampilkanHasil, // true/false
+    });
   } catch (err) {
     console.error("❌ Gagal akhiri ujian:", err);
     res.status(500).json({ message: "Gagal akhiri ujian" });

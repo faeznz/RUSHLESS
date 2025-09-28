@@ -1,0 +1,8 @@
+CREATE TABLE template_question (
+    id INT NOT NULL AUTO_INCREMENT COMMENT 'Primary Key',
+    user_id INT NOT NULL COMMENT 'ID User',
+    course_id INT NOT NULL COMMENT 'ID Course',
+    template JSON NOT NULL COMMENT 'List ID Soal (Array JSON)',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Create Time',
+    PRIMARY KEY (id)
+) COMMENT='Tabel penyimpanan urutan soal per user';

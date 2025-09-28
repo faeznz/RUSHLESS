@@ -10,28 +10,13 @@ export default function ExamSidebar() {
   const { courseId, userId } = useQueryParams();
   const navigate = useNavigate(); // <-- hook navigate
 
-  const handleEndExam = async () => {
-    if (!window.confirm("Apakah Anda yakin ingin mengakhiri ujian?")) return;
-
-    try {
-      await api.post("/ujian/selesai", { courseId, userId });
-      // reset localStorage supaya bisa mulai lagi
-      localStorage.removeItem(`ujian_started_${courseId}_${userId}`);
-      // navigasi ke home tanpa reload
-      navigate("/home");
-    } catch (err) {
-      console.error("❌ Gagal akhiri ujian:", err);
-
-      // baca pesan dari server kalau ada
-      const msg =
-        err.response?.data?.message || "Gagal mengakhiri ujian, coba lagi.";
-      alert(msg);
-    }
-  };
+  
 
   return (
     <div className="space-y-4 p-4 border rounded-lg bg-gray-50">
-      <div className="flex justify-between">
+        <ExamQuestionGrid />
+
+      {/* <div className="flex justify-between">
         <button
           className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
           onClick={() => setCurrentIndex(currentIndex - 1)}
@@ -54,11 +39,8 @@ export default function ExamSidebar() {
         onClick={handleEndExam}
       >
         Akhiri Ujian
-      </button>
+      </button> */}
 
-      <hr className="my-2" />
-
-      <ExamQuestionGrid />
     </div>
   );
 }

@@ -3,63 +3,43 @@ import useExamStore from "../../stores/useExamStore";
 import useQueryParams from "../../hooks/useQueryParams";
 
 export default function ExamQuestionGrid() {
-  const { soal, currentIndex, setCurrentIndex, jawabanSiswa, toggleRagu } = useExamStore();
+  const { soal, currentIndex, setCurrentIndex, jawabanSiswa } = useExamStore();
   const { courseId, userId } = useQueryParams();
 
-  const currentSoal = soal[currentIndex];
-  const jawabanObj = currentSoal ? jawabanSiswa[currentSoal.id] || {} : {};
-  const flagged = jawabanObj.flag;
-
   return (
-    <div>
-      <h3 className="text-md font-semibold mb-2">Daftar Soal</h3>
-      <div className="grid grid-cols-5 gap-2">
+    <div className="">
+      <h3 className="text-sm font-bold text-gray-700 mb-3">Daftar Soal</h3>
+      <div className="grid grid-cols-5 gap-12">
         {soal.map((s, i) => {
           const jawabanObj = jawabanSiswa[s.id] || {};
           const sudahDijawab =
             jawabanObj.jawaban !== undefined && jawabanObj.jawaban !== null;
           const flagged = jawabanObj.flag;
 
-          let btnClass = "bg-gray-100 hover:bg-gray-200"; // default
+          let btnClass =
+            "w-12 h-12 rounded-xl border-2 font-semibold text-sm transition-all duration-200 flex items-center justify-center shadow-sm hover:shadow-md active:scale-95";
+
           if (currentIndex === i) {
-            btnClass = "bg-blue-500 text-white"; // soal aktif
+            btnClass += " bg-blue-500 text-white border-blue-600"; // aktif
           } else if (flagged) {
-            btnClass = "bg-yellow-400 text-white hover:bg-yellow-500"; // ragu
+            btnClass += " bg-amber-400 text-white border-amber-500"; // ragu
           } else if (sudahDijawab) {
-            btnClass = "bg-green-400 text-white hover:bg-green-500"; // sudah dijawab
+            btnClass += " bg-emerald-400 text-white border-emerald-500"; // sudah
+          } else {
+            btnClass += " bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200"; // belum
           }
 
           return (
             <button
               key={s.id}
               onClick={() => setCurrentIndex(i)}
-              className={`w-10 h-10 flex items-center justify-center rounded border ${btnClass}`}
+              className={btnClass}
             >
               {i + 1}
             </button>
           );
         })}
       </div>
-
-      {/* tombol ragu hanya tampil untuk soal aktif */}
-      {currentSoal && (
-        <div className="mt-3 flex justify-center">
-          <button
-            onClick={() =>
-              toggleRagu(
-                currentSoal.id,
-                courseId,
-                userId,
-                jawabanObj.attemp ?? 1,
-                !flagged
-              )
-            }
-            className="text-sm px-3 py-1 rounded border bg-yellow-100 hover:bg-yellow-200"
-          >
-            {flagged ? "Batal Ragu" : "Tandai Ragu"}
-          </button>
-        </div>
-      )}
     </div>
   );
 }
