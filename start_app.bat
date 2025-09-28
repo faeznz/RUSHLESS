@@ -9,8 +9,8 @@ REM Buka BE-MASTER
 start cmd /k "cd /d %BASEDIR%\RUSHLESS-BE-MASTER && npm install && node server.js"
 
 REM Buka FE
-start cmd /k "cd /d %BASEDIR%\RUSHLESS-FE && set PORT=4000 && npm install && npm start"
-@REM start "" cmd /k "cd /d %BASEDIR%RUSHLESS-FE && npm install && npm run build && npx serve -s build -l 4000"
+@REM start cmd /k "cd /d %BASEDIR%\RUSHLESS-FE && set PORT=4000 && npm install && npm run build && npm start"
+start "" cmd /k "cd /d %BASEDIR%RUSHLESS-FE && npm install && npm run build && npx serve -s build -l 4000"
 
 REM Run Tunnel
 start cmd /k "cloudflared tunnel run a6f8a35a-852c-4b78-acc3-65ab9c0bd04e"
