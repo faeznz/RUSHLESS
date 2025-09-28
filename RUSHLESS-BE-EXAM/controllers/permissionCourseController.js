@@ -21,16 +21,16 @@ async function checkPermission(req, res) {
       return res.json({ allowed: true, message: "Admin memiliki akses penuh" });
     }
 
-    // Ambil kelas course + tanggal mulai
+    // Ambil kelas course + tanggal mulai + maxPercobaan
     const [courseResult] = await db.query(
-      "SELECT kelas, tanggal_mulai FROM courses WHERE id = ?",
+      "SELECT kelas, tanggal_mulai, maxPercobaan FROM courses WHERE id = ?",
       [courseId]
     );
     if (courseResult.length === 0) {
       return res.json({ allowed: false, message: "Course tidak ditemukan" });
     }
 
-    const { kelas: courseKelas, tanggal_mulai } = courseResult[0];
+    const { kelas: courseKelas, tanggal_mulai, maxPercobaan } = courseResult[0];
 
     // ✅ Validasi tanggal mulai
     const now = new Date();
@@ -43,10 +43,11 @@ async function checkPermission(req, res) {
       });
     }
     if (startDate > now) {
-      // belum waktunya ujian
       return res.json({
         allowed: false,
-        message: `Ujian ini baru bisa diakses mulai ${startDate.toLocaleString("id-ID")}`,
+        message: `Ujian ini baru bisa diakses mulai ${startDate.toLocaleString(
+          "id-ID"
+        )}`,
       });
     }
 
@@ -82,6 +83,21 @@ async function checkPermission(req, res) {
       return res.json({
         allowed: false,
         message: `User dari kelas ${userKelas} tidak memiliki akses ke course ini`,
+      });
+    }
+
+    // ✅ Cek jumlah percobaan (attemp)
+    const [statusResult] = await db.query(
+      "SELECT attemp FROM status_ujian WHERE user_id = ? AND course_id = ? ORDER BY attemp DESC LIMIT 1",
+      [userId, courseId]
+    );
+
+    const currentAttemp = statusResult.length > 0 ? statusResult[0].attemp : 0;
+
+    if (currentAttemp >= maxPercobaan) {
+      return res.json({
+        allowed: false,
+        message: `Anda sudah mencapai batas maksimum percobaan (${maxPercobaan})`,
       });
     }
 

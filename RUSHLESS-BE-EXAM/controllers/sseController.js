@@ -118,6 +118,7 @@ async function registerSSEPeserta(req, res) {
       username,
       courseId,
       sisaWaktu,
+      isOnline: true,
       jawaban: jawabanRows,
       status: "masuk_room",
     });

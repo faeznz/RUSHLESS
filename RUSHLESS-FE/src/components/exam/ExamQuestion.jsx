@@ -57,6 +57,7 @@ export default function ExamQuestion() {
 
     // ⬅️ panggil ulang fetch soal supaya jawaban siswa up-to-date
     fetchSoal(courseId, userId);
+    window.location.reload();
   } catch (err) {
     console.error("❌ Gagal mulai ujian:", err);
     alert("Gagal memulai ujian, coba lagi.");

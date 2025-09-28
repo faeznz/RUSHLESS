@@ -6,3 +6,19 @@ CREATE TABLE template_question (
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Create Time',
     PRIMARY KEY (id)
 ) COMMENT='Tabel penyimpanan urutan soal per user';
+
+
+DELIMITER $$
+
+CREATE TRIGGER `increment_attemp`
+BEFORE UPDATE ON `status_ujian`
+FOR EACH ROW
+BEGIN
+    IF NEW.attemp IS NULL THEN
+        SET NEW.attemp = 1;
+    ELSE
+        SET NEW.attemp = OLD.attemp + 1;
+    END IF;
+END$$
+
+DELIMITER ;

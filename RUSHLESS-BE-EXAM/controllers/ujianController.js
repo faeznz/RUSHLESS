@@ -52,6 +52,7 @@ async function mulaiUjian(req, res) {
     userId,
     username,
     courseId,
+    isOnline: true,
     status: "mengerjakan",
     sisaWaktu: detikPenuh,
     start_time,

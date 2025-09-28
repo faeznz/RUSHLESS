@@ -84,7 +84,7 @@ export default function ExamMonitor() {
       toast.error(`❌ Gagal logout ${user.name}`);
     }
   };
-  
+
   const handleReset = async (user) => {
     try {
       await api.post(`/exam/reset/${user.id}`, { user_id: user.id });
@@ -166,12 +166,24 @@ export default function ExamMonitor() {
               <tbody className="divide-y divide-gray-200">
                 {list.map((s) => (
                   <tr key={s.id} className="hover:bg-gray-50 transition">
-                    <td className="px-4 py-3 text-gray-900 font-medium">{s.username}</td>
-                    <td className="px-4 py-3 text-gray-900 font-medium">{s.name}</td>
+                    <td className="px-4 py-3 text-gray-900 font-medium">
+                      {s.username}
+                    </td>
+                    <td className="px-4 py-3 text-gray-900 font-medium">
+                      {s.name}
+                    </td>
                     <td className="px-4 py-3 text-gray-900">{s.kelas}</td>
-                    <td className="px-4 py-3 text-gray-900">{s.isOnline ? "Online" : "Offline"}</td>
-                    <td className={`px-4 py-3 ${STATUS_CLASS[s.status] || "text-gray-600"} font-medium`}>
-                      {STATUS_LABEL[s.status] || s.status}
+                    <td className="px-4 py-3 text-gray-900">
+                      {s.isOnline ? "Online" : "Offline"}
+                    </td>
+                    <td
+                      className={`px-4 py-3 ${
+                        STATUS_CLASS[s.status] || "text-gray-600"
+                      } font-medium`}
+                    >
+                      {!s.isOnline && s.status !== "inactive"
+                        ? "Belum Selesai"
+                        : STATUS_LABEL[s.status] || s.status}
                     </td>
                     <td className="px-4 py-3 text-gray-900">
                       {s.start_time
@@ -194,9 +206,10 @@ export default function ExamMonitor() {
                           onClick={() => handleReset(s)}
                           disabled={s.status !== "mengerjakan"}
                           className={`px-3 py-1 rounded-lg text-sm font-medium transition
-                            ${s.status === "mengerjakan"
-                              ? "bg-red-500 text-white hover:bg-red-600 active:scale-95"
-                              : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                            ${
+                              s.status === "mengerjakan"
+                                ? "bg-red-500 text-white hover:bg-red-600 active:scale-95"
+                                : "bg-gray-200 text-gray-400 cursor-not-allowed"
                             }`}
                         >
                           Reset
@@ -205,9 +218,10 @@ export default function ExamMonitor() {
                           onClick={() => handleKick(s)}
                           disabled={s.status !== "mengerjakan"}
                           className={`px-3 py-1 rounded-lg text-sm font-medium transition
-                            ${s.status === "mengerjakan"
-                              ? "bg-red-500 text-white hover:bg-red-600 active:scale-95"
-                              : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                            ${
+                              s.status === "mengerjakan"
+                                ? "bg-red-500 text-white hover:bg-red-600 active:scale-95"
+                                : "bg-gray-200 text-gray-400 cursor-not-allowed"
                             }`}
                         >
                           Kick
@@ -215,9 +229,10 @@ export default function ExamMonitor() {
                         <button
                           disabled={s.status !== "mengerjakan"}
                           className={`px-3 py-1 rounded-lg text-sm font-medium transition
-                            ${s.status === "mengerjakan"
-                              ? "bg-gray-200 text-gray-700 hover:bg-gray-300 active:scale-95"
-                              : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                            ${
+                              s.status === "mengerjakan"
+                                ? "bg-gray-200 text-gray-700 hover:bg-gray-300 active:scale-95"
+                                : "bg-gray-200 text-gray-400 cursor-not-allowed"
                             }`}
                         >
                           Lock

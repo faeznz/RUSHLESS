@@ -74,8 +74,8 @@ export default function HasilPopup({ courseId, userId, setShowHasilPopup, attemp
 
         <div className="mb-6">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm text-gray-600">Skor</span>
-            <span className="text-3xl font-bold text-blue-600">{persentase}%</span>
+            <span className="text-sm text-gray-600">Nilai Anda</span>
+            <span className="text-3xl font-bold text-blue-600">{persentase}</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-3">
             <div
