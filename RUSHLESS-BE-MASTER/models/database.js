@@ -1,4 +1,4 @@
-require('dotenv').config();
+require("dotenv").config();
 
 const mysql = require("mysql2/promise");
 
@@ -48,7 +48,7 @@ ${DB_NAME}
       CREATE TABLE IF NOT EXISTS session_status (
         user_id INT(11) NOT NULL,
         status ENUM('online', 'offline') NOT NULL,
-        last_update DATETIME NOT NULL,
+        last_update DATETIME DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (user_id)
       )
     `);
@@ -61,7 +61,7 @@ ${DB_NAME}
         hidden BOOLEAN DEFAULT FALSE
       )
     `);
-    
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS courses (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -99,22 +99,27 @@ ${DB_NAME}
     `);
 
     // Migration for adding use_secure_app to courses
-    const [courseColumns] = await pool.query(`
+    const [courseColumns] = await pool.query(
+      `
       SELECT * 
       FROM information_schema.COLUMNS 
       WHERE TABLE_SCHEMA = ? 
       AND TABLE_NAME = 'courses' 
       AND COLUMN_NAME = 'use_secure_app'
-    `, [DB_NAME]);
+    `,
+      [DB_NAME]
+    );
 
     if (courseColumns.length === 0) {
       await pool.query(`
         ALTER TABLE courses
         ADD COLUMN use_secure_app BOOLEAN DEFAULT FALSE
       `);
-      console.log("✅ Migrasi berhasil: Kolom 'use_secure_app' ditambahkan ke tabel 'courses'.");
+      console.log(
+        "✅ Migrasi berhasil: Kolom 'use_secure_app' ditambahkan ke tabel 'courses'."
+      );
     }
-    
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS student_work_log (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -127,7 +132,7 @@ ${DB_NAME}
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS kelas (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -148,14 +153,14 @@ ${DB_NAME}
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE KEY unique_jawaban (user_id, course_id, soal_id, attemp)
       )
-    `);       
+    `);
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS questions (
         id INT AUTO_INCREMENT PRIMARY KEY,
         course_id INT NOT NULL,
-        soal JSON NOT NULL,
-        opsi JSON NOT NULL,
+        soal LONGTEXT NOT NULL,
+        opsi LONGTEXT NOT NULL,
         jawaban VARCHAR(255),
         tipe_soal VARCHAR(20) DEFAULT 'pilihan_ganda',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -258,18 +263,29 @@ ${DB_NAME}
       )
     `);
 
-     await pool.query(`
-  CREATE TABLE IF NOT EXISTS app_config (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    web_ip VARCHAR(100) NOT NULL DEFAULT 'localhost',
-    web_port INT NOT NULL DEFAULT 3000,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-  )
-`);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS app_config (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        web_ip VARCHAR(100) NOT NULL DEFAULT 'localhost',
+        web_port INT NOT NULL DEFAULT 3000,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
 
-    // ... (existing migrations remain the same) ...
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS template_question (
+          id INT NOT NULL AUTO_INCREMENT,
+          user_id INT NOT NULL,
+          course_id INT NOT NULL,
+          template LONGTEXT NOT NULL,
+          create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (id)
+      ) COMMENT='Tabel penyimpanan urutan soal per user';
+    `);
 
-    const [rows] = await pool.query("SELECT * FROM users WHERE username = 'admin'");
+    const [rows] = await pool.query(
+      "SELECT * FROM users WHERE username = 'admin'"
+    );
     if (rows.length === 0) {
       await pool.query(`
         INSERT INTO users (username, password, role, name)
