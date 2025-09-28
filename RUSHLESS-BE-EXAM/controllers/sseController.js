@@ -21,9 +21,10 @@ function sendToUser(userId, data) {
 
 function broadcastPenguji(courseId) {
   const list = getAll(courseId);
-  const payload = list.map(({ userId, username, kelas, status, start_time, end_time }) => ({
+  const payload = list.map(({ userId, name, username, kelas, status, start_time, end_time }) => ({
     userId,
     username,
+    name,
     kelas,
     status,
     start_time,
@@ -172,7 +173,7 @@ async function registerSSEPenguji(req, res) {
 
   // 🔍 Ambil semua user yang termasuk kelas tersebut
   const [users] = await db.query(
-    `SELECT id, name, kelas FROM users WHERE kelas IN (?)`,
+    `SELECT id, name, kelas, username FROM users WHERE kelas IN (?)`,
     [kelasList]
   );
 
@@ -193,7 +194,8 @@ const payload = users.map(u => {
   const s = statusMap.get(u.id) || {};
   return {
     userId: u.id,
-    username: u.name,
+    username: u.username,
+    name: u.name,
     kelas: u.kelas,
     status: s.status || "inactive",
     start_time: s.start_time,
@@ -206,6 +208,7 @@ const payload = users.map(u => {
     set(p.userId, {
       userId: p.userId,
       username: p.username,
+      name: p.name,
       courseId,
       kelas: p.kelas,
       start_time: p.start_time,

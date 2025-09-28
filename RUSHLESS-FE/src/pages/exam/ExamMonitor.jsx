@@ -84,6 +84,16 @@ export default function ExamMonitor() {
       toast.error(`❌ Gagal logout ${user.name}`);
     }
   };
+  
+  const handleReset = async (user) => {
+    try {
+      await api.post(`/exam/reset/${user.id}`, { user_id: user.id });
+      toast.success(`✅ ${user.name} berhasil reset`);
+    } catch (err) {
+      console.error(err);
+      toast.error(`❌ Gagal reset ${user.name}`);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -109,6 +119,12 @@ export default function ExamMonitor() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-100">
                 <tr>
+                  <th
+                    onClick={() => handleSort("username")}
+                    className="px-4 py-3 text-left text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-200 transition"
+                  >
+                    Username {renderSortIcon("username")}
+                  </th>
                   <th
                     onClick={() => handleSort("name")}
                     className="px-4 py-3 text-left text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-200 transition"
@@ -144,6 +160,7 @@ export default function ExamMonitor() {
               <tbody className="divide-y divide-gray-200">
                 {list.map((s) => (
                   <tr key={s.id} className="hover:bg-gray-50 transition">
+                    <td className="px-4 py-3 text-gray-900 font-medium">{s.username}</td>
                     <td className="px-4 py-3 text-gray-900 font-medium">{s.name}</td>
                     <td className="px-4 py-3 text-gray-900">{s.kelas}</td>
                     <td className={`px-4 py-3 ${STATUS_CLASS[s.status] || "text-gray-600"} font-medium`}>
@@ -166,6 +183,17 @@ export default function ExamMonitor() {
                     </td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex gap-2 justify-center">
+                        <button
+                          onClick={() => handleReset(s)}
+                          disabled={s.status !== "mengerjakan"}
+                          className={`px-3 py-1 rounded-lg text-sm font-medium transition
+                            ${s.status === "mengerjakan"
+                              ? "bg-red-500 text-white hover:bg-red-600 active:scale-95"
+                              : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                            }`}
+                        >
+                          Reset
+                        </button>
                         <button
                           onClick={() => handleKick(s)}
                           disabled={s.status !== "mengerjakan"}

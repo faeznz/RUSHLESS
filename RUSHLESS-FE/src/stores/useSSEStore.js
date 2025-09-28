@@ -89,7 +89,8 @@ const useSSEStore = create((set, get) => ({
           payload.forEach((p) => {
             next.set(p.userId, {
               id: p.userId,
-              name: p.username,
+              name: p.name,
+              username: p.username,
               status: p.status,
               kelas: p.kelas,
               start_time: p.start_time,
