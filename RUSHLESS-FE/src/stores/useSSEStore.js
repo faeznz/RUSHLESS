@@ -93,6 +93,7 @@ const useSSEStore = create((set, get) => ({
               username: p.username,
               status: p.status,
               kelas: p.kelas,
+              isOnline: p.isOnline,
               start_time: p.start_time,
               end_time: p.end_time,
               lastUpdate: Date.now(),

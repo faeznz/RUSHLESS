@@ -138,6 +138,12 @@ export default function ExamMonitor() {
                     Kelas {renderSortIcon("kelas")}
                   </th>
                   <th
+                    onClick={() => handleSort("isOnline")}
+                    className="px-4 py-3 text-left text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-200 transition"
+                  >
+                    Connection {renderSortIcon("isOnline")}
+                  </th>
+                  <th
                     onClick={() => handleSort("status")}
                     className="px-4 py-3 text-left text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-200 transition"
                   >
@@ -163,6 +169,7 @@ export default function ExamMonitor() {
                     <td className="px-4 py-3 text-gray-900 font-medium">{s.username}</td>
                     <td className="px-4 py-3 text-gray-900 font-medium">{s.name}</td>
                     <td className="px-4 py-3 text-gray-900">{s.kelas}</td>
+                    <td className="px-4 py-3 text-gray-900">{s.isOnline ? "Online" : "Offline"}</td>
                     <td className={`px-4 py-3 ${STATUS_CLASS[s.status] || "text-gray-600"} font-medium`}>
                       {STATUS_LABEL[s.status] || s.status}
                     </td>

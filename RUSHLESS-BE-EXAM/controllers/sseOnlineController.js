@@ -33,33 +33,51 @@ async function broadcastOnlineStatus() {
 // SSE untuk peserta (dibuka setelah login)
 async function registerOnlinePeserta(req, res) {
   const userId = req.query.userId;
-  if (!userId) return res.status(400).end("userId required");
+  if (!userId) {
+    console.log("❌ userId kosong pada request SSE peserta");
+    return res.status(400).end("userId required");
+  }
 
   res.writeHead(200, sseHeader);
   res.flushHeaders?.();
 
   // tandai online di DB
-  await db.query(
-    `INSERT INTO session_status (user_id, status) VALUES (?, 'online')
-     ON DUPLICATE KEY UPDATE status='online'`,
-    [userId]
-  );
+  try {
+    await db.query(
+      `INSERT INTO session_status (user_id, status)
+       VALUES (?, ?)
+       ON DUPLICATE KEY UPDATE status = VALUES(status),
+                               last_update = CURRENT_TIMESTAMP`,
+      [userId, 'online']
+    );
+    console.log(`✅ Peserta ${userId} ditandai ONLINE`);
+  } catch (err) {
+    console.error("❌ Error insert/update online:", err);
+  }
 
-  // simpan koneksi
+  // simpan koneksi SSE
   clientsOnlinePeserta.set(userId, res);
 
   // kirim status awal ke user ini (opsional)
-  res.write(`data: ${JSON.stringify({status: "online"})}\n\n`);
+  res.write(`data: ${JSON.stringify({ status: "online" })}\n\n`);
 
   // broadcast ke penguji
   await broadcastOnlineStatus();
 
   req.on("close", async () => {
-    // user keluar / tab ditutup → offline
-    await db.query(
-      `UPDATE session_status SET status='offline' WHERE user_id=?`,
-      [userId]
-    );
+    try {
+      await db.query(
+        `INSERT INTO session_status (user_id, status)
+         VALUES (?, ?)
+         ON DUPLICATE KEY UPDATE status = VALUES(status),
+                                 last_update = CURRENT_TIMESTAMP`,
+        [userId, 'offline']
+      );
+      console.log(`🔴 Peserta ${userId} ditandai OFFLINE`);
+    } catch (err) {
+      console.error("❌ Error insert/update offline:", err);
+    }
+
     clientsOnlinePeserta.delete(userId);
     await broadcastOnlineStatus();
   });

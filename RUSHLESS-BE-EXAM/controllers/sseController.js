@@ -19,20 +19,37 @@ function sendToUser(userId, data) {
   if (res) res.write(`data: ${JSON.stringify(data)}\n\n`);
 }
 
-function broadcastPenguji(courseId) {
-  const list = getAll(courseId);
+async function broadcastPenguji(courseId) {
+  const list = getAll(courseId); // semua peserta di courseId
+
+  // kalau belum ada peserta, langsung return
+  if (!list.length) return;
+
+  // Ambil status online peserta ini dari DB (sekali query)
+  const userIds = list.map(p => p.userId);
+  const [onlineRows] = await db.query(
+    `SELECT user_id, status FROM session_status WHERE user_id IN (?)`,
+    [userIds.length ? userIds : [0]] // hindari IN ()
+  );
+
+  const onlineMap = new Map(
+    onlineRows.map(r => [r.user_id, r.status === "online"])
+  );
+
+  // merge semua data dengan isOnline
   const payload = list.map(({ userId, name, username, kelas, status, start_time, end_time }) => ({
     userId,
     username,
     name,
     kelas,
-    status,
+    status,               // status ujian
     start_time,
-    end_time
+    end_time,
+    isOnline: onlineMap.get(userId) || false // default false kalau belum ada
   }));
 
   const msg = JSON.stringify(payload);
-  if (lastBroadcast.get(courseId) === msg) return;
+  if (lastBroadcast.get(courseId) === msg) return; // skip kalau sama
 
   lastBroadcast.set(courseId, msg);
   const sseMsg = `data: ${msg}\n\n`;
@@ -69,9 +86,6 @@ async function registerSSEPeserta(req, res) {
     `SELECT id, name, kelas FROM users WHERE kelas IN (?)`,
     [kelasList]
   );
-
-  console.log(kelasList);
-  console.log(allUsers);
 
   // masukkan semua user dengan status default inactive
   for (const u of allUsers) {
@@ -152,6 +166,7 @@ async function registerSSEPenguji(req, res) {
 
   res.writeHead(200, sseHeader);
 
+  // simpan koneksi SSE penguji
   if (!clientsPenguji.has(courseId)) {
     clientsPenguji.set(courseId, new Set());
   }
@@ -162,7 +177,10 @@ async function registerSSEPenguji(req, res) {
     `SELECT kelas FROM courses WHERE id = ?`,
     [courseId]
   );
-  if (!courseRows.length) return res.status(404).send("course not found");
+  if (!courseRows.length) {
+    res.status(404).end("course not found");
+    return;
+  }
 
   let kelasList;
   try {
@@ -183,25 +201,36 @@ async function registerSSEPenguji(req, res) {
     [courseId]
   );
   const statusMap = new Map(
-  statusRows.map(r => [r.user_id, { 
-    status: r.status, 
-    start_time: r.start_time, 
-    end_time: r.end_time 
-  }])
-);
+    statusRows.map(r => [
+      r.user_id,
+      { status: r.status, start_time: r.start_time, end_time: r.end_time },
+    ])
+  );
 
-const payload = users.map(u => {
-  const s = statusMap.get(u.id) || {};
-  return {
-    userId: u.id,
-    username: u.username,
-    name: u.name,
-    kelas: u.kelas,
-    status: s.status || "inactive",
-    start_time: s.start_time,
-    end_time: s.end_time
-  };
-});
+  // 🔍 Ambil status online dari DB untuk semua user
+  const userIds = users.map(u => u.id);
+  const [onlineRows] = await db.query(
+    `SELECT user_id, status FROM session_status WHERE user_id IN (?)`,
+    [userIds.length ? userIds : [0]] // hindari IN () kosong
+  );
+  const onlineMap = new Map(
+    onlineRows.map(r => [r.user_id, r.status === "online"])
+  );
+
+  // buat payload awal (sudah ada isOnline)
+  const payload = users.map(u => {
+    const s = statusMap.get(u.id) || {};
+    return {
+      userId: u.id,
+      username: u.username,
+      name: u.name,
+      kelas: u.kelas,
+      status: s.status || "inactive",
+      start_time: s.start_time,
+      end_time: s.end_time,
+      isOnline: onlineMap.get(u.id) || false, // tambahkan isOnline
+    };
+  });
 
   // 📦 Simpan snapshot awal ke liveState
   payload.forEach((p) => {
@@ -220,13 +249,12 @@ const payload = users.map(u => {
   });
 
   // 📡 Kirim snapshot awal ke penguji ini
-  const sseMsg = `data: ${JSON.stringify(payload)}\n\n`;
-  res.write(sseMsg);
+  res.write(`data: ${JSON.stringify(payload)}\n\n`);
 
   // 🔁 Broadcast ke semua penguji lain (dengan cache)
   broadcastPenguji(courseId);
 
-  // ⏲ Ping tiap 2 detik
+  // ⏲ Ping tiap 2 detik untuk update broadcast
   const pingId = setInterval(() => {
     if (clientsPenguji.get(courseId)?.has(res)) {
       broadcastPenguji(courseId);
@@ -259,6 +287,13 @@ async function mulaiUjian(userId, courseId, detikPenuh) {
      VALUES (?, ?, 'mengerjakan')
      ON DUPLICATE KEY UPDATE status='mengerjakan'`,
     [userId, courseId]
+  );
+
+  await db.query(
+    `INSERT INTO session_status (user_id, status)
+     VALUES (?, 'online')
+     ON DUPLICATE KEY UPDATE status='online'`,
+    [userId]
   );
 
   // mulai timer
