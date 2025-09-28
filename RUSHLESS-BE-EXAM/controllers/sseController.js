@@ -3,6 +3,7 @@ const clientsPeserta = new Map(); // userId -> res
 const clientsPenguji = new Map(); // courseId -> Set<res>
 const { getAll, get, set, del } = require("../utils/liveState");
 const { startTimer } = require("../utils/timerManager");
+const { clintsOnlinePenguji, clientsOnlinePeserta } = require("./sseOnlineController");
 
 const sseHeader = {
   "Content-Type": "text/event-stream",
@@ -21,35 +22,24 @@ function sendToUser(userId, data) {
 
 async function broadcastPenguji(courseId) {
   const list = getAll(courseId); // semua peserta di courseId
-
-  // kalau belum ada peserta, langsung return
   if (!list.length) return;
 
-  // Ambil status online peserta ini dari DB (sekali query)
-  const userIds = list.map(p => p.userId);
-  const [onlineRows] = await db.query(
-    `SELECT user_id, status FROM session_status WHERE user_id IN (?)`,
-    [userIds.length ? userIds : [0]] // hindari IN ()
-  );
-
-  const onlineMap = new Map(
-    onlineRows.map(r => [r.user_id, r.status === "online"])
-  );
-
-  // merge semua data dengan isOnline
+  // merge semua data dengan isOnline dari live SSE map
   const payload = list.map(({ userId, name, username, kelas, status, start_time, end_time }) => ({
     userId,
     username,
     name,
     kelas,
-    status,               // status ujian
+    status,
     start_time,
     end_time,
-    isOnline: onlineMap.get(userId) || false // default false kalau belum ada
+    isOnline: clientsOnlinePeserta.has(String(userId))
   }));
 
   const msg = JSON.stringify(payload);
-  if (lastBroadcast.get(courseId) === msg) return; // skip kalau sama
+  if (lastBroadcast.get(courseId) === msg) return;
+
+  console.log(clientsOnlinePeserta);
 
   lastBroadcast.set(courseId, msg);
   const sseMsg = `data: ${msg}\n\n`;
@@ -67,6 +57,7 @@ async function registerSSEPeserta(req, res) {
   res.flushHeaders?.();
 
   clientsPeserta.set(userId, res);
+  clientsOnlinePeserta.add(userId);
 
   // --- AMBIL LIST SEMUA SISWA DI KELAS COURSE INI ---
   const [courseRows] = await db.query(`SELECT kelas FROM courses WHERE id=?`, [
@@ -207,17 +198,7 @@ async function registerSSEPenguji(req, res) {
     ])
   );
 
-  // 🔍 Ambil status online dari DB untuk semua user
-  const userIds = users.map(u => u.id);
-  const [onlineRows] = await db.query(
-    `SELECT user_id, status FROM session_status WHERE user_id IN (?)`,
-    [userIds.length ? userIds : [0]] // hindari IN () kosong
-  );
-  const onlineMap = new Map(
-    onlineRows.map(r => [r.user_id, r.status === "online"])
-  );
-
-  // buat payload awal (sudah ada isOnline)
+  // buat payload awal (ambil isOnline dari clientsOnlinePeserta)
   const payload = users.map(u => {
     const s = statusMap.get(u.id) || {};
     return {
@@ -228,7 +209,7 @@ async function registerSSEPenguji(req, res) {
       status: s.status || "inactive",
       start_time: s.start_time,
       end_time: s.end_time,
-      isOnline: onlineMap.get(u.id) || false, // tambahkan isOnline
+      isOnline: clientsOnlinePeserta.has(u.id), // ambil dari SSE map, bukan DB
     };
   });
 
@@ -240,6 +221,7 @@ async function registerSSEPenguji(req, res) {
       name: p.name,
       courseId,
       kelas: p.kelas,
+      isOnline: p.isOnline,
       start_time: p.start_time,
       end_time: p.end_time,
       sisaWaktu: get(p.userId)?.sisaWaktu ?? null,
@@ -273,64 +255,11 @@ async function registerSSEPenguji(req, res) {
   });
 }
 
-/* ---------- FUNGSI STATUS ---------- */
-async function mulaiUjian(userId, courseId, detikPenuh) {
-  const old = get(userId);
-  if (!old) return;
-
-  // update status liveState
-  set(userId, { ...old, status: "mengerjakan", sisaWaktu: detikPenuh });
-
-  // update DB
-  await db.query(
-    `INSERT INTO status_ujian (user_id, course_id, status)
-     VALUES (?, ?, 'mengerjakan')
-     ON DUPLICATE KEY UPDATE status='mengerjakan'`,
-    [userId, courseId]
-  );
-
-  await db.query(
-    `INSERT INTO session_status (user_id, status)
-     VALUES (?, 'online')
-     ON DUPLICATE KEY UPDATE status='online'`,
-    [userId]
-  );
-
-  // mulai timer
-  startTimer(userId, courseId, detikPenuh, old.username);
-
-  broadcastPenguji(courseId);
-}
-
-async function selesaiUjian(userId, courseId) {
-  const old = get(userId);
-  if (old) set(userId, { ...old, status: "selesai" });
-
-  // update DB
-  await db.query(
-    `UPDATE status_ujian SET status='selesai' WHERE user_id=? AND course_id=?`,
-    [userId, courseId]
-  );
-
-  // tutup SSE peserta
-  const resSSE = clientsPeserta.get(userId);
-  if (resSSE) {
-    resSSE.write(`data: ${JSON.stringify({ type: "finished" })}\n\n`);
-    resSSE.end();
-    clientsPeserta.delete(userId);
-  }
-
-  del(userId);
-  broadcastPenguji(courseId);
-}
-
 module.exports = {
   registerSSEPeserta,
   registerSSEPenguji,
   broadcastPenguji,
   sendToUser,
-  mulaiUjian,
-  selesaiUjian,
   clientsPeserta,
   clientsPenguji,
 };

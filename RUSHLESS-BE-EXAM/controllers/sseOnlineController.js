@@ -1,10 +1,9 @@
-// onlineSSE.js
 const db = require("../config/db");
 
 // menyimpan SSE penguji (supaya penguji langsung dapat update realtime)
 const clientsOnlinePenguji = new Set(); // semua penguji res
-// menyimpan SSE peserta (untuk keepalive)
-const clientsOnlinePeserta = new Map(); // userId -> res
+// menyimpan SSE peserta (hanya userId yang online)
+const clientsOnlinePeserta = new Set(); // userId
 
 const sseHeader = {
   "Content-Type": "text/event-stream",
@@ -15,13 +14,11 @@ const sseHeader = {
 // broadcast ke semua penguji
 async function broadcastOnlineStatus() {
   // ambil semua status user dari DB
-  const [rows] = await db.query(
-    `SELECT user_id, status FROM session_status`
-  );
+  const [rows] = await db.query(`SELECT user_id, status FROM session_status`);
 
   const payload = rows.map(r => ({
     userId: r.user_id,
-    isOnline: r.status === "online"
+    isOnline: clientsOnlinePeserta.has(r.user_id) // true kalau userId ada di Set
   }));
 
   const sseMsg = `data: ${JSON.stringify(payload)}\n\n`;
@@ -55,10 +52,10 @@ async function registerOnlinePeserta(req, res) {
     console.error("❌ Error insert/update online:", err);
   }
 
-  // simpan koneksi SSE
-  clientsOnlinePeserta.set(userId, res);
+  // simpan userId di Set
+  clientsOnlinePeserta.add(userId);
 
-  // kirim status awal ke user ini (opsional)
+  // kirim status awal ke peserta
   res.write(`data: ${JSON.stringify({ status: "online" })}\n\n`);
 
   // broadcast ke penguji
@@ -99,4 +96,5 @@ async function registerOnlinePenguji(req, res) {
 module.exports = {
   registerOnlinePeserta,
   registerOnlinePenguji,
+  clientsOnlinePeserta, // sekarang Set<userId>
 };

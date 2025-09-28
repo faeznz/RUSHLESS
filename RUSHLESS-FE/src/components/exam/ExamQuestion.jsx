@@ -48,20 +48,22 @@ export default function ExamQuestion() {
 
   // klik "Mulai Ujian"
   const handleStartExam = async () => {
-    try {
-      setLoadingStart(true);
-      await api.post("/ujian/mulai", { courseId, userId });
+  try {
+    setLoadingStart(true);
+    await api.post("/ujian/mulai", { courseId, userId });
 
-      localStorage.setItem(`ujian_started_${courseId}_${userId}`, "1");
-      setShowStartPopup(false);
-      window.location.reload();
-    } catch (err) {
-      console.error("❌ Gagal mulai ujian:", err);
-      alert("Gagal memulai ujian, coba lagi.");
-    } finally {
-      setLoadingStart(false);
-    }
-  };
+    localStorage.setItem(`ujian_started_${courseId}_${userId}`, "1");
+    setShowStartPopup(false);
+
+    // ⬅️ panggil ulang fetch soal supaya jawaban siswa up-to-date
+    fetchSoal(courseId, userId);
+  } catch (err) {
+    console.error("❌ Gagal mulai ujian:", err);
+    alert("Gagal memulai ujian, coba lagi.");
+  } finally {
+    setLoadingStart(false);
+  }
+};
 
   // klik "Akhiri Ujian"
   const handleEndExam = async () => {

@@ -3,15 +3,20 @@ import { useEffect, useState, useRef } from "react";
 import { BrowserRouter as Router } from "react-router-dom";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Cookies from "js-cookie";
 import api from "./api";
 import AppLayout from "./layout/AppLayout";
 import SetupPage from "./pages/SetupPage";
-import Cookies from "js-cookie";
 
 function App() {
   const [appMode, setAppMode] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [token, setToken] = useState(Cookies.get("token"));
+  const [userId, setUserId] = useState(Cookies.get("user_id"));
+
   const eventSourceRef = useRef(null);
+  const reconnectTimeoutRef = useRef(null);
+  const API_BASE_URL = process.env.REACT_APP_API_EXAM_BASE_URL;
 
   // === Cek mode aplikasi
   useEffect(() => {
@@ -25,7 +30,7 @@ function App() {
         }
       } catch (error) {
         console.error("Gagal mengambil mode aplikasi:", error);
-        setAppMode('error'); 
+        setAppMode('error');
       } finally {
         setIsLoading(false);
       }
@@ -33,60 +38,94 @@ function App() {
     checkAppMode();
   }, []);
 
-  // === Buka SSE online saat App mount ===
-  useEffect(() => {
-    // ambil token & user_id dari Cookies
-    const token = Cookies.get("token");
-    const user_id = Cookies.get("user_id");
-    const API_BASE_URL = process.env.REACT_APP_API_EXAM_BASE_URL;
+  // === SSE dengan retry otomatis
+  const connectSSE = () => {
+    if (!token || !userId) return;
 
-    if (token && user_id) {
-      // tutup SSE lama kalau ada
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-      }
-
-      // SSE dengan header token bisa lewat query string atau cookie
-      const es = new EventSource(
-        `${API_BASE_URL}/stream/online/peserta?userId=${user_id}`
-      );
-
-      es.onopen = () => {
-        console.log("SSE online connected");
-      };
-
-      es.onmessage = (event) => {
-        // event.data bisa JSON, parse jika perlu
-        console.log("SSE online message:", event.data);
-      };
-
-      es.onerror = (err) => {
-        console.error("SSE online error:", err);
-        es.close();
-      };
-
-      eventSourceRef.current = es;
+    // tutup SSE lama jika ada
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
     }
 
-    return () => {
-      // cleanup
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
+    const es = new EventSource(`${API_BASE_URL}/stream/online/peserta?userId=${userId}`);
+
+    es.onopen = () => {
+      console.log("SSE online connected");
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
       }
     };
-  }, []); // dijalankan sekali saat mount
+
+    es.onmessage = (event) => {
+      console.log("SSE online message:", event.data);
+    };
+
+    es.onerror = (err) => {
+      console.error("SSE online error:", err);
+      es.close();
+      // coba reconnect setelah delay
+      reconnectTimeoutRef.current = setTimeout(() => {
+        console.log("Mencoba reconnect SSE...");
+        connectSSE();
+      }, 3000); // retry tiap 3 detik
+    };
+
+    eventSourceRef.current = es;
+  };
+
+  // jalankan saat token/userId berubah
+  useEffect(() => {
+    if (!token || !userId) {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+        console.log("SSE online closed karena logout");
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+      return;
+    }
+
+    connectSSE();
+
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+    };
+  }, [token, userId]);
+
+  // === update token & userId saat login/logout
+  useEffect(() => {
+    const handleCookieChange = () => {
+      setToken(Cookies.get("token"));
+      setUserId(Cookies.get("user_id"));
+    };
+
+    const interval = setInterval(handleCookieChange, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen bg-gray-100 text-gray-700">Memuat Konfigurasi...</div>;
+    return <div className="flex items-center justify-center min-h-screen bg-gray-100 text-gray-700">
+      Memuat Konfigurasi...
+    </div>;
   }
 
-  if (appMode === 'needsSetup') {
-    return <SetupPage />;
-  }
-  
-  if (appMode === 'error') {
-    return <div className="flex items-center justify-center min-h-screen bg-red-100 text-red-700">Gagal memuat konfigurasi aplikasi. Pastikan backend berjalan dan coba muat ulang halaman.</div>;
-  }
+  if (appMode === 'needsSetup') return <SetupPage />;
+  if (appMode === 'error') return (
+    <div className="flex items-center justify-center min-h-screen bg-red-100 text-red-700">
+      Gagal memuat konfigurasi aplikasi. Pastikan backend berjalan dan muat ulang halaman.
+    </div>
+  );
 
   return (
     <Router>

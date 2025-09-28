@@ -6,7 +6,7 @@ import {
   RoleRoute,
   ExamResultAccessRoute,
   CourseAccessRoute,
-} from "./guards/RouteGuards";
+} from "../routes/guards/RouteGuards";
 
 import LoginPage from "../pages/Login";
 import HomePage from "../pages/Home";

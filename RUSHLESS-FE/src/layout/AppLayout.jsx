@@ -5,7 +5,7 @@ import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import api from "../api";
-import AppRoutes from "../routes/AppRoutes";
+import AppRoutes from "./AppRoutes";
 
 export default function AppLayout({ appMode }) {
   const location = useLocation();
