@@ -11,6 +11,7 @@ export default function QuestionContent({
 }) {
   let opsiArray = [];
 
+  // Normalisasi opsi
   if (currentSoal.opsi) {
     if (typeof currentSoal.opsi === "string") {
       try {
@@ -26,16 +27,24 @@ export default function QuestionContent({
     }
   }
 
+  // Pilihan ganda
   if (currentSoal.tipe_soal === "pilihan_ganda") {
     return (
       <div className="space-y-3">
-        {opsiArray.map((opsi, idx) => {
-          const huruf = String.fromCharCode(65 + idx);
-          const isSelected = jawabanObj.jawaban === idx;
+        {opsiArray.map((opsiObj, idx) => {
+          // key asli dari server, untuk dikirim ke API
+          const key = Object.keys(opsiObj)[0];
+          const value = opsiObj[key];
+
+          // dummy label untuk UI
+          const dummyHuruf = String.fromCharCode(65 + idx);
+
+          // cek jawaban user (bisa dari SSE)
+          const isSelected = jawabanObj.jawaban === key;
 
           return (
             <label
-              key={idx}
+              key={key}
               className={`flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md ${
                 isSelected
                   ? "bg-blue-50 border-blue-500"
@@ -45,9 +54,9 @@ export default function QuestionContent({
               <input
                 type="radio"
                 name={`soal-${currentSoal.id}`}
-                value={idx}
+                value={key} // dikirim ke API
                 checked={isSelected}
-                onChange={() => handleJawab(currentSoal.id, idx, userId)}
+                onChange={() => handleJawab(currentSoal.id, key, userId)}
                 className="sr-only"
               />
               <span
@@ -57,11 +66,11 @@ export default function QuestionContent({
                     : "border-gray-300 text-gray-600"
                 }`}
               >
-                {huruf}
+                {dummyHuruf}
               </span>
               <span
                 className="text-gray-800 prose max-w-none"
-                dangerouslySetInnerHTML={{ __html: opsi }}
+                dangerouslySetInnerHTML={{ __html: value }}
               />
             </label>
           );
@@ -70,6 +79,7 @@ export default function QuestionContent({
     );
   }
 
+  // Essay / jawaban teks
   return (
     <div className="rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       <JoditEditor

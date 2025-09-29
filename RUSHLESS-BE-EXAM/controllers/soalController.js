@@ -7,17 +7,18 @@ exports.getAllSoalByCourse = async (req, res, next) => {
     console.log("Course ID:", courseId);
     console.log("User ID:", userId);
 
-    // cek dulu setting acakSoal dari courses
+    // Ambil setting acakSoal & acakJawaban dari courses
     const [courseRows] = await pool.query(
-      `SELECT acakSoal FROM courses WHERE id = ?`,
+      `SELECT acakSoal, acakJawaban FROM courses WHERE id = ?`,
       [courseId]
     );
     if (!courseRows.length) {
       return res.status(404).json({ message: "Course tidak ditemukan" });
     }
     const acakSoal = !!courseRows[0].acakSoal;
+    const acakJawaban = !!courseRows[0].acakJawaban;
 
-    // ambil semua soal urut normal
+    // Ambil semua soal
     const [rows] = await pool.query(
       `SELECT id, course_id, soal, opsi, jawaban, tipe_soal
        FROM questions
@@ -30,7 +31,7 @@ exports.getAllSoalByCourse = async (req, res, next) => {
       return res.status(400).json({ message: "Tidak ada soal untuk course ini" });
     }
 
-    // cek template_question
+    // Cek template_question
     const [templateRows] = await pool.query(
       `SELECT template FROM template_question WHERE user_id = ? AND course_id = ?`,
       [userId, courseId]
@@ -39,7 +40,7 @@ exports.getAllSoalByCourse = async (req, res, next) => {
     let orderedQuestions = [];
 
     if (templateRows.length) {
-      // user sudah punya template, urutkan sesuai template
+      // User sudah punya template, urutkan sesuai template
       let templateIds = [];
       try {
         templateIds = JSON.parse(templateRows[0].template);
@@ -47,26 +48,41 @@ exports.getAllSoalByCourse = async (req, res, next) => {
         console.error("Gagal parse template JSON:", e);
       }
 
-      // buat map id → object soal
       const mapSoal = new Map(rows.map((r) => [r.id, r]));
-      // urutkan sesuai template
       orderedQuestions = templateIds.map((id) => mapSoal.get(id)).filter(Boolean);
     } else {
-      // user belum punya template
+      // User belum punya template
       let soalArr = [...rows];
       if (acakSoal) {
-        // acak manual di Node.js
         soalArr.sort(() => Math.random() - 0.5);
       }
       orderedQuestions = soalArr;
 
-      // simpan template baru ke DB
+      // Simpan template baru ke DB
       const idArray = soalArr.map((q) => q.id);
       await pool.query(
         `INSERT INTO template_question (user_id, course_id, template) VALUES (?, ?, ?)`,
         [userId, courseId, JSON.stringify(idArray)]
       );
     }
+
+    // Proses opsi agar selalu berbentuk [{"A": "jawaban1"}, {"B": "jawaban2"}, ...]
+    orderedQuestions = orderedQuestions.map((q) => {
+      let opsiArr = typeof q.opsi === 'string' ? JSON.parse(q.opsi) : q.opsi;
+
+      const keys = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      let opsiMapped = opsiArr.map((val, i) => ({ [keys[i]]: val }));
+
+      // acak jawaban jika acakJawaban = true
+      if (acakJawaban) {
+        opsiMapped = [...opsiMapped].sort(() => Math.random() - 0.5);
+      }
+
+      return {
+        ...q,
+        opsi: opsiMapped
+      };
+    });
 
     res.json({ data: orderedQuestions });
   } catch (err) {

@@ -32,38 +32,37 @@ const useSSEStore = create((set, get) => ({
     const es = new EventSource(url);
 
     es.onmessage = (e) => {
-      try {
-        const p = JSON.parse(e.data);
-        if (p.type === "sync" && p.data) {
-          const { sisaWaktu, jawaban } = p.data;
-          const mapped = {};
-          if (Array.isArray(jawaban)) {
-            jawaban.forEach((j) => {
-              const soalId = String(j.soal_id);
+  try {
+    const p = JSON.parse(e.data);
+    if (p.type === "sync" && p.data) {
+      const { sisaWaktu, jawaban } = p.data;
+      const mapped = {};
+      if (Array.isArray(jawaban)) {
+        jawaban.forEach((j) => {
+          const soalId = String(j.soal_id);
 
-              let idx = null;
-              if (j.jawaban) {
-                const letter = String(j.jawaban).trim().toUpperCase();
-                idx = letter.charCodeAt(0) - 65; // 0=A,1=B,...
-              }
+          // Simpan jawaban apa adanya (key A/B/C)
+          const answerKey = j.jawaban ? String(j.jawaban).trim().toUpperCase() : null;
 
-              mapped[soalId] = {
-                jawaban: idx, // tetap angka
-                flag: j.flag === true, // tambahin flag
-                attemp: j.attemp ?? 1, // kalau mau simpan attempt juga
-              };
-            });
-          }
-          useExamStore.setState({
-            jawabanSiswa: mapped,
-            sisaWaktu: sisaWaktu ?? useExamStore.getState().sisaWaktu,
-          });
-          if (sisaWaktu !== undefined && sisaWaktu <= 0) es.close();
-        }
-      } catch (err) {
-        console.error("❌ Gagal parse SSE peserta:", err);
+          mapped[soalId] = {
+            jawaban: answerKey,       // key asli, bukan angka
+            flag: j.flag === true,    // optional flag
+            attemp: j.attemp ?? 1,    // attempt
+          };
+        });
       }
-    };
+
+      useExamStore.setState({
+        jawabanSiswa: mapped,
+        sisaWaktu: sisaWaktu ?? useExamStore.getState().sisaWaktu,
+      });
+
+      if (sisaWaktu !== undefined && sisaWaktu <= 0) es.close();
+    }
+  } catch (err) {
+    console.error("❌ Gagal parse SSE peserta:", err);
+  }
+};
 
     es.onerror = (err) => console.error("❌ SSE peserta error:", err);
     return es;

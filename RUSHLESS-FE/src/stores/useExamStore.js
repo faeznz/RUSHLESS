@@ -32,6 +32,8 @@ const useExamStore = create((set, get) => ({
     const currentSoal = soal.find((s) => String(s.id) === String(soalId));
     if (!currentSoal) return;
 
+    console.log(answer)
+
     const jawabanToSend =
       typeof answer === "number" ? String.fromCharCode(65 + answer) : answer;
 
