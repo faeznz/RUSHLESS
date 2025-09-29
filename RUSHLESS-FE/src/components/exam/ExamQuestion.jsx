@@ -29,15 +29,16 @@ export default function ExamQuestion() {
 
   const { connectPesertaSSE } = useSSEStore();
   const { courseId, userId } = useQueryParams();
-  const { isAllowed, isLoading } = useExamAccess(courseId, userId);
+  const { isAllowed, isLoading, message, startFromBeginning } = useExamAccess(
+    courseId,
+    userId
+  );
 
   const currentSoal = soal?.[currentIndex];
   const jawabanObj = currentSoal ? jawabanSiswa[currentSoal.id] || {} : {};
   const flagged = jawabanObj.flag;
   const [eventSource, setEventSource] = useState(null);
-  const [showStartPopup, setShowStartPopup] = useState(() => {
-    return !localStorage.getItem(`ujian_started_${courseId}_${userId}`);
-  });
+  const [showStartPopup, setShowStartPopup] = useState(false);
   const [loadingStart, setLoadingStart] = useState(false);
   const [allAnswered, setAllAnswered] = useState(false);
 
@@ -48,23 +49,22 @@ export default function ExamQuestion() {
 
   // klik "Mulai Ujian"
   const handleStartExam = async () => {
-  try {
-    setLoadingStart(true);
-    await api.post("/ujian/mulai", { courseId, userId });
+    try {
+      setLoadingStart(true);
+      await api.post("/ujian/mulai", { courseId, userId });
 
-    localStorage.setItem(`ujian_started_${courseId}_${userId}`, "1");
-    setShowStartPopup(false);
+      setShowStartPopup(false);
 
-    // ⬅️ panggil ulang fetch soal supaya jawaban siswa up-to-date
-    fetchSoal(courseId, userId);
-    window.location.reload();
-  } catch (err) {
-    console.error("❌ Gagal mulai ujian:", err);
-    alert("Gagal memulai ujian, coba lagi.");
-  } finally {
-    setLoadingStart(false);
-  }
-};
+      // ⬅️ panggil ulang fetch soal supaya jawaban siswa up-to-date
+      fetchSoal(courseId, userId);
+      window.location.reload();
+    } catch (err) {
+      console.error("❌ Gagal mulai ujian:", err);
+      alert("Gagal memulai ujian, coba lagi.");
+    } finally {
+      setLoadingStart(false);
+    }
+  };
 
   // klik "Akhiri Ujian"
   const handleEndExam = async () => {
@@ -87,6 +87,17 @@ export default function ExamQuestion() {
       alert(msg);
     }
   };
+
+  useEffect(() => {
+    if (startFromBeginning === null) return; // masih loading / belum tahu
+
+    if (startFromBeginning) {
+      setShowStartPopup(true);
+    } else {
+      // kalau bukan mulai dari awal → jangan tampilkan popup
+      setShowStartPopup(false);
+    }
+  }, [startFromBeginning, courseId, userId]);
 
   // update SSE & fetch soal
   useEffect(() => {
@@ -191,14 +202,14 @@ export default function ExamQuestion() {
       </div>
 
       {showHasilPopup && (
-  <HasilPopup
-    hasilUjian={hasilUjian}
-    setShowHasilPopup={setShowHasilPopup}
-    courseId={courseId}
-    userId={userId}
-    attemp={jawabanObj.attemp}
-  />
-)}
+        <HasilPopup
+          hasilUjian={hasilUjian}
+          setShowHasilPopup={setShowHasilPopup}
+          courseId={courseId}
+          userId={userId}
+          attemp={jawabanObj.attemp}
+        />
+      )}
     </div>
   );
 }

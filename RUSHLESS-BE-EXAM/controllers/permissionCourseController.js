@@ -18,7 +18,7 @@ async function checkPermission(req, res) {
 
     // Jika role admin → langsung allowed
     if (userRole === "admin") {
-      return res.json({ allowed: true, message: "Admin memiliki akses penuh" });
+      return res.json({ allowed: true, message: "Admin memiliki akses penuh", startFromBeginning: true });
     }
 
     // Ambil kelas course + tanggal mulai + maxPercobaan
@@ -35,7 +35,6 @@ async function checkPermission(req, res) {
     // ✅ Validasi tanggal mulai
     const now = new Date();
     const startDate = new Date(tanggal_mulai);
-    console.log(startDate, now);
     if (isNaN(startDate.getTime())) {
       return res.json({
         allowed: false,
@@ -45,9 +44,7 @@ async function checkPermission(req, res) {
     if (startDate > now) {
       return res.json({
         allowed: false,
-        message: `Ujian ini baru bisa diakses mulai ${startDate.toLocaleString(
-          "id-ID"
-        )}`,
+        message: `Ujian ini baru bisa diakses mulai ${startDate.toLocaleString("id-ID")}`,
       });
     }
 
@@ -86,30 +83,41 @@ async function checkPermission(req, res) {
       });
     }
 
-    // ✅ Cek jumlah percobaan (attemp)
+    // ✅ Cek jumlah percobaan & status terakhir
     const [statusResult] = await db.query(
-      "SELECT attemp FROM status_ujian WHERE user_id = ? AND course_id = ? ORDER BY attemp DESC LIMIT 1",
+      "SELECT status, attemp FROM status_ujian WHERE user_id = ? AND course_id = ? ORDER BY attemp DESC LIMIT 1",
       [userId, courseId]
     );
 
-    const currentAttemp = statusResult.length > 0 ? statusResult[0].attemp : 0;
+    let currentAttemp = 0;
+    let startFromBeginning = true; // default mulai dari awal
+
+    if (statusResult.length > 0) {
+      const { status, attemp } = statusResult[0];
+      currentAttemp = attemp;
+
+      // Kalau status sedang mengerjakan atau masuk_room → lanjut, bukan mulai awal
+      if (status === "mengerjakan") {
+        startFromBeginning = false;
+      }
+    }
 
     if (currentAttemp >= maxPercobaan) {
       return res.json({
         allowed: false,
         message: `Anda sudah mencapai batas maksimum percobaan (${maxPercobaan})`,
+        startFromBeginning,
       });
     }
 
     return res.json({
       allowed: true,
       message: "User diizinkan mengikuti ujian",
+      startFromBeginning,
     });
   } catch (err) {
     console.error("Error checkPermission:", err);
-    return res
-      .status(500)
-      .json({ allowed: false, message: "Internal server error" });
+    return res.status(500).json({ allowed: false, message: "Internal server error", startFromBeginning: null });
   }
 }
 
