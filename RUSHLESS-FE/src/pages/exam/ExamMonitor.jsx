@@ -176,7 +176,11 @@ export default function ExamMonitor() {
                       {s.name}
                     </td>
                     <td className="px-4 py-3 text-gray-900">{s.kelas}</td>
-                    <td className="px-4 py-3 text-gray-900">
+                    <td
+                      className={`px-4 py-3 font-medium ${
+                        s.isOnline ? "text-green-600" : "text-red-600"
+                      }`}
+                    >
                       {s.isOnline ? "Online" : "Offline"}
                     </td>
                     <td
