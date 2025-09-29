@@ -15,6 +15,10 @@ function Header({ onToggleSidebar }) {
   const navigate = useNavigate();
   const logoutFlagRef = useRef(false);
 
+  const eventSourceRef = useRef(null);
+const reconnectTimeoutRef = useRef(null);
+
+
   useEffect(() => {
     const nameFromCookie = Cookies.get("name");
     if (nameFromCookie) setUserName(nameFromCookie);
@@ -38,22 +42,33 @@ function Header({ onToggleSidebar }) {
     navigate("/", { replace: true });
   };
 
-  const handleLogout = async () => {
-    if (logoutFlagRef.current) return;
-    logoutFlagRef.current = true;
+const handleLogout = async () => {
+  if (logoutFlagRef.current) return;
+  logoutFlagRef.current = true;
 
-    try {
-      const user_id = Cookies.get("user_id");
-      // Panggil endpoint logout utama di backend
-      // Endpoint ini akan menghapus httpOnly refreshToken dan set status offline
-      await api.post("/auth/logout", { user_id });
-    } catch (err) {
-      console.error("Gagal saat memanggil endpoint logout:", err);
-      // Tetap lanjutkan cleanup di frontend meskipun backend gagal
-    } finally {
-      performCleanup(); // Hapus cookie di sisi frontend dan redirect
+  try {
+    const user_id = Cookies.get("user_id");
+    // Panggil endpoint logout utama di backend
+    await api.post("/auth/logout", { user_id });
+  } catch (err) {
+    console.error("Gagal saat memanggil endpoint logout:", err);
+    // Tetap lanjutkan cleanup di frontend meskipun backend gagal
+  } finally {
+    // 🔹 Tutup semua koneksi SSE
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+      console.log("SSE online diputus saat logout");
     }
-  };
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+
+    // 🔹 Cleanup cookie / state login
+    performCleanup(); // fungsi lama yang hapus cookie & redirect
+  }
+};
 
   useEffect(() => {
     const user_id = Cookies.get("user_id");
