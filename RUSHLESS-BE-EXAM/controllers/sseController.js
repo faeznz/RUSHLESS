@@ -3,7 +3,10 @@ const clientsPeserta = new Map(); // userId -> res
 const clientsPenguji = new Map(); // courseId -> Set<res>
 const { getAll, get, set, del } = require("../utils/liveState");
 const { startTimer } = require("../utils/timerManager");
-const { clintsOnlinePenguji, clientsOnlinePeserta } = require("./sseOnlineController");
+const {
+  clintsOnlinePenguji,
+  clientsOnlinePeserta,
+} = require("./sseOnlineController");
 
 const sseHeader = {
   "Content-Type": "text/event-stream",
@@ -25,16 +28,18 @@ async function broadcastPenguji(courseId) {
   if (!list.length) return;
 
   // merge semua data dengan isOnline dari live SSE map
-  const payload = list.map(({ userId, name, username, kelas, status, start_time, end_time }) => ({
-    userId,
-    username,
-    name,
-    kelas,
-    status,
-    start_time,
-    end_time,
-    isOnline: clientsOnlinePeserta.has(String(userId))
-  }));
+  const payload = list.map(
+    ({ userId, name, username, kelas, status, start_time, end_time }) => ({
+      userId,
+      username,
+      name,
+      kelas,
+      status,
+      start_time,
+      end_time,
+      isOnline: clientsOnlinePeserta.has(String(userId)),
+    })
+  );
 
   const msg = JSON.stringify(payload);
   if (lastBroadcast.get(courseId) === msg) return;
@@ -193,14 +198,14 @@ async function registerSSEPenguji(req, res) {
     [courseId]
   );
   const statusMap = new Map(
-    statusRows.map(r => [
+    statusRows.map((r) => [
       r.user_id,
       { status: r.status, start_time: r.start_time, end_time: r.end_time },
     ])
   );
 
   // buat payload awal (ambil isOnline dari clientsOnlinePeserta)
-  const payload = users.map(u => {
+  const payload = users.map((u) => {
     const s = statusMap.get(u.id) || {};
     return {
       userId: u.id,

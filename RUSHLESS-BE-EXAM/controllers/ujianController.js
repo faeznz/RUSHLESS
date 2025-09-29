@@ -161,11 +161,13 @@ async function selesaiUjian(req, res) {
 
     // update DB status ujian
     await db.query(
-      `UPDATE status_ujian 
-       SET status='sudah_mengerjakan', end_time=? 
-       WHERE user_id=? AND course_id=?`,
-      [end_time, userId, courseId]
-    );
+  `UPDATE status_ujian 
+   SET status = 'sudah_mengerjakan', 
+       end_time = ?, 
+       attemp = COALESCE(attemp, 0) + 1
+   WHERE user_id = ? AND course_id = ?`,
+  [end_time, userId, courseId]
+);
 
     // 🔥 hapus template_question milik user & course ini
     await db.query(

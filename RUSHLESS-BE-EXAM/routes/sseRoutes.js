@@ -12,6 +12,8 @@ const {
   registerOnlinePenguji 
 } = require('../controllers/sseOnlineController');
 
+const { resetExam } = require('../controllers/resetController');
+
 // helper middleware role
 function roleMiddleware(roles) {
   return (req, res, next) =>
@@ -29,5 +31,8 @@ router.get('/online/peserta', registerOnlinePeserta);
 
 // ─── SSE Online Penguji (pantau status online semua user) ────────
 router.get('/online/penguji', registerOnlinePenguji);
+
+// RESET UJIAN (butuh login + role guru/admin)
+router.delete('/reset/:courseId', resetExam);
 
 module.exports = router;

@@ -41,28 +41,43 @@ exports.resetUjian = async (req, res) => {
     const conn = await db;
 
     // Hapus jawaban ujian & timer
-    await conn.query("DELETE FROM jawaban_trail WHERE course_id = ? AND user_id = ?", [course_id, user_id]);
-    await conn.query("DELETE FROM answertrail_timer WHERE course_id = ? AND user_id = ?", [course_id, user_id]);
+    await conn.query(
+      "DELETE FROM jawaban_trail WHERE course_id = ? AND user_id = ?",
+      [course_id, user_id]
+    );
+    await conn.query(
+      "DELETE FROM answertrail_timer WHERE course_id = ? AND user_id = ?",
+      [course_id, user_id]
+    );
 
-    // Update status ujian ke "Tidak Sedang Mengerjakan"
-    await conn.query(`
-      INSERT INTO status_ujian (user_id, course_id, status)
-      VALUES (?, ?, 'Tidak Sedang Mengerjakan')
-      ON DUPLICATE KEY UPDATE status = 'Tidak Sedang Mengerjakan'
-    `, [user_id, course_id]);
+    // Reset status ujian + start_time, end_time, attemp
+    await conn.query(
+      `
+      INSERT INTO status_ujian (user_id, course_id, status, start_time, end_time, attemp)
+      VALUES (?, ?, 'inactive', NULL, NULL, 0)
+      ON DUPLICATE KEY UPDATE 
+        status = 'inactive',
+        start_time = NULL,
+        end_time = NULL,
+        attemp = 0
+      `,
+      [user_id, course_id]
+    );
 
     // Set session status to offline using user_id
-    await conn.query(`
+    await conn.query(
+      `
       INSERT INTO session_status (user_id, status, last_update)
       VALUES (?, 'offline', NOW())
-      ON DUPLICATE KEY UPDATE status = 'offline'
-    `, [user_id]);
+      ON DUPLICATE KEY UPDATE status = 'offline', last_update = NOW()
+      `,
+      [user_id]
+    );
 
-    // Broadcast ke SSE tetap pakai user_id!
+    // Broadcast ke SSE tetap pakai user_id
     broadcastLogout(user_id);
 
     res.json({ message: "✅ Ujian berhasil direset dan diset offline." });
-
   } catch (err) {
     console.error("❌ Reset ujian gagal:", err.message);
     res.status(500).json({ message: "Server error" });

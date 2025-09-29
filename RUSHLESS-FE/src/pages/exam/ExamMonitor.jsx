@@ -8,7 +8,7 @@ import { toast } from "../../utils/toast";
 
 const STATUS_LABEL = {
   inactive: "Belum Mengerjakan",
-  masuk_room: "Didalam Room",
+  masuk_room: "Masuk Room",
   mengerjakan: "Sedang Mengerjakan",
   selesai: "Selesai",
   sudah_mengerjakan: "Selesai",
@@ -86,14 +86,17 @@ export default function ExamMonitor() {
   };
 
   const handleReset = async (user) => {
-    try {
-      await api.post(`/exam/reset/${user.id}`, { user_id: user.id });
-      toast.success(`✅ ${user.name} berhasil reset`);
-    } catch (err) {
-      console.error(err);
-      toast.error(`❌ Gagal reset ${user.name}`);
-    }
-  };
+  try {
+    await api.delete(`/exam/reset/${courseId}`, {
+      data: { user_id: user.id }  // <-- payload dikirim di sini
+    });
+    window.location.reload();
+    toast.success(`✅ ${user.name} berhasil reset`);
+  } catch (err) {
+    console.error(err);
+    toast.error(`❌ Gagal reset ${user.name}`);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -181,7 +184,7 @@ export default function ExamMonitor() {
                         STATUS_CLASS[s.status] || "text-gray-600"
                       } font-medium`}
                     >
-                      {!s.isOnline && s.status !== "inactive"
+                      {!s.isOnline && s.status !== "inactive" && s.status !== "sudah_mengerjakan"
                         ? "Belum Selesai"
                         : STATUS_LABEL[s.status] || s.status}
                     </td>
@@ -204,10 +207,10 @@ export default function ExamMonitor() {
                       <div className="flex gap-2 justify-center">
                         <button
                           onClick={() => handleReset(s)}
-                          disabled={s.status !== "mengerjakan"}
+                          disabled={s.status !== "mengerjakan" && s.status !== "sudah_mengerjakan"}
                           className={`px-3 py-1 rounded-lg text-sm font-medium transition
                             ${
-                              s.status === "mengerjakan"
+                              s.status === "mengerjakan" || s.status === "sudah_mengerjakan"
                                 ? "bg-red-500 text-white hover:bg-red-600 active:scale-95"
                                 : "bg-gray-200 text-gray-400 cursor-not-allowed"
                             }`}
@@ -216,10 +219,10 @@ export default function ExamMonitor() {
                         </button>
                         <button
                           onClick={() => handleKick(s)}
-                          disabled={s.status !== "mengerjakan"}
+                          disabled={s.status !== "mengerjakan" && s.status !== "sudah_mengerjakan"}
                           className={`px-3 py-1 rounded-lg text-sm font-medium transition
                             ${
-                              s.status === "mengerjakan"
+                              s.status === "mengerjakan" || s.status === "sudah_mengerjakan"
                                 ? "bg-red-500 text-white hover:bg-red-600 active:scale-95"
                                 : "bg-gray-200 text-gray-400 cursor-not-allowed"
                             }`}
