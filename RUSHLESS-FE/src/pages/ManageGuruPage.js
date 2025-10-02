@@ -138,7 +138,7 @@ const ManageGuruPage = () => {
       <div className="max-w-full mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-800">
-            🧑‍🏫 Manajemen Kelas Guru
+            Manajemen Kelas Guru
           </h1>
           <div className="flex space-x-2">
             <button

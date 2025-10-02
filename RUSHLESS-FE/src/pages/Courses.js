@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Cookies from "js-cookie";
 import api from "../api";
 import { toast } from "../utils/toast";
@@ -45,10 +45,34 @@ function CoursesPage() {
   const [promptDefaultValue, setPromptDefaultValue] = useState("");
 
   const navigate = useNavigate();
+  const location = useLocation();
   const role = Cookies.get("role");
   const name = Cookies.get("name");
   const userId = Cookies.get("user_id");
   const now = new Date();
+
+  useEffect(() => {
+    if (!loading && location.state?.highlightedCourseId) {
+      const courseId = location.state.highlightedCourseId;
+      const courseToHighlight = courses.find(c => c.id === courseId);
+
+      if (courseToHighlight) {
+        const folderName = courseToHighlight.subfolder || "Tanpa Folder";
+        setOpenFolders(prev => ({ ...prev, [folderName]: true }));
+
+        setTimeout(() => {
+          const element = document.querySelector(`[data-course-id='${courseId}']`);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            element.classList.add('highlight-course');
+            setTimeout(() => {
+              element.classList.remove('highlight-course');
+            }, 2000); // Highlight for 2 seconds
+          }
+        }, 100); // Delay to allow folder to open
+      }
+    }
+  }, [loading, courses, location.state]);
 
   const fetchInitialData = async () => {
     setLoading(true);
@@ -551,6 +575,7 @@ function CoursesPage() {
                         {coursesInFolder.map((course) => (
                           <div
                             key={course.id}
+                            data-course-id={course.id}
                             className="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col group transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
                           >
                             <div className="h-32 bg-indigo-50 flex items-center justify-center">

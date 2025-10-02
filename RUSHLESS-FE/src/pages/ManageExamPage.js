@@ -158,19 +158,36 @@ export default function ManageExamPage() {
     }
   };
   
-  // --- Filtering dengan useMemo untuk optimasi ---
-  const siswaFiltered = useMemo(() => {
-    return siswa.filter((s) => {
-      const cocokKelas = kelasFilter ? s.kelas?.toLowerCase().includes(kelasFilter.toLowerCase()) : true;
+  const kelasList = useMemo(() => {
+    const allClasses = siswa.map(s => s.kelas).filter(Boolean);
+    return [...new Set(allClasses)].sort();
+  }, [siswa]);
+
+  // --- Filtering dan Grouping dengan useMemo untuk optimasi ---
+  const groupedAndFilteredSiswa = useMemo(() => {
+    const filtered = siswa.filter((s) => {
+      // Jika kelasFilter ada, lakukan perbandingan case-insensitive
+      const cocokKelas = kelasFilter ? s.kelas?.toLowerCase() === kelasFilter.toLowerCase() : true;
       const cocokNama = searchNama ? s.name?.toLowerCase().includes(searchNama.toLowerCase()) : true;
       return cocokKelas && cocokNama;
     });
+
+    const groups = {};
+    filtered.forEach((s) => {
+      const key = s.kelas || "Tanpa Kelas";
+      if (!groups[key]) {
+        groups[key] = [];
+      }
+      groups[key].push(s);
+    });
+
+    return groups;
   }, [siswa, kelasFilter, searchNama]);
 
   return (
     <div className="p-4 sm:p-6 bg-gray-50 min-h-screen font-sans">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">🛠️ Kelola Ujian</h1>
+        <h1 className="text-2xl font-bold text-gray-800">Kontrol ujian</h1>
         {/* Bisa ditambahkan tombol aksi global di sini jika perlu */}
       </div>
 
@@ -178,12 +195,16 @@ export default function ManageExamPage() {
       <div className="mb-6 p-4 bg-white rounded-lg shadow-sm flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
           <label className="text-sm font-medium text-gray-600 mb-1 block">Filter Kelas</label>
-          <input
+          <select
             value={kelasFilter}
             onChange={(e) => setKelasFilter(e.target.value)}
-            className="w-full border px-3 py-2 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            placeholder="Contoh: 9A"
-          />
+            className="w-full border px-3 py-2 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+          >
+            <option value="">Semua Kelas</option>
+            {kelasList.map(kelas => (
+              <option key={kelas} value={kelas}>{kelas}</option>
+            ))}
+          </select>
         </div>
         <div className="flex-1">
           <label className="text-sm font-medium text-gray-600 mb-1 block">Cari Nama Siswa</label>
@@ -199,62 +220,65 @@ export default function ManageExamPage() {
       {/* Tabel Data */}
       {loading ? (
         <LoadingSpinner />
+      ) : Object.keys(groupedAndFilteredSiswa).length === 0 ? (
+        <div className="text-center py-10 text-gray-500 bg-white rounded-lg shadow">
+          <p className="font-semibold text-lg">🚫 Tidak ada data</p>
+          <p>Tidak ada siswa yang cocok dengan filter Anda.</p>
+        </div>
       ) : (
-        <div className="overflow-x-auto bg-white rounded-lg shadow">
-          <table className="min-w-full w-full text-sm text-left text-gray-700">
-            <thead className="bg-gray-100 text-xs text-gray-700 uppercase">
-              <tr>
-                <th className="p-4">Nama</th>
-                <th className="p-4">Kelas</th>
-                <th className="p-4">Status Sesi</th>
-                <th className="p-4">Status Ujian</th>
-                <th className="p-4">Akun Terkunci</th>
-                <th className="p-4">Update Terakhir</th>
-                <th className="p-4 text-center">Operasi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {siswaFiltered.length === 0 ? (
-                <tr>
-                  <td colSpan="7" className="text-center py-10 text-gray-500">
-                    <p className="font-semibold text-lg">🚫 Tidak ada data</p>
-                    <p>Tidak ada siswa yang cocok dengan filter Anda.</p>
-                  </td>
-                </tr>
-              ) : (
-                siswaFiltered.map((s) => (
-                  <tr key={s.id} className="border-b hover:bg-gray-50">
-                    <td className="p-4 font-medium text-gray-900">{s.name}</td>
-                    <td className="p-4">{s.kelas}</td>
-                    <td className="p-4"><StatusBadge status={s.status} /></td>
-                    <td className="p-4"><StatusBadge status={s.status_ujian} /></td>
-                    <td className="p-4 text-center">{s.login_locked ? "🔒" : "🔓"}</td>
-                    <td className="p-4">{s.last_update ? new Date(s.last_update).toLocaleString('id-ID') : "-"}</td>
-                    <td className="p-4">
-                      <div className="flex justify-center items-center flex-wrap gap-2">
-                          <ActionButton 
-                            onClick={() => openConfirmation('RESET', s, `Anda yakin ingin mereset ujian untuk ${s.name}?`)}
-                            icon="🔄" text="Reset" color="bg-yellow-500 hover:bg-yellow-600" tooltip="Reset Ujian"
-                          />
-                          <ActionButton 
-                            onClick={() => bukaModalTambahWaktu(s)}
-                            icon="⏱️" text="Waktu" color="bg-blue-500 hover:bg-blue-600" tooltip="Tambah Waktu"
-                          />
-                          <ActionButton 
-                            onClick={() => openConfirmation('LOGOUT', s, `Anda yakin ingin mengeluarkan ${s.name} dari sesi?`)}
-                            icon="🚪" text="Logout" color="bg-red-500 hover:bg-red-600" tooltip="Logout Paksa"
-                          />
-                          <ActionButton 
-                            onClick={() => openConfirmation('TOGGLE_LOCK', s, `Anda yakin ingin ${s.login_locked ? 'membuka kunci' : 'mengunci'} akun ${s.name}?`)}
-                            icon={s.login_locked ? "🔓" : "🔒"} text={s.login_locked ? "Buka" : "Kunci"} color={s.login_locked ? "bg-green-600 hover:bg-green-700" : "bg-gray-700 hover:bg-gray-800"} tooltip={s.login_locked ? "Buka Kunci Akun" : "Kunci Akun"}
-                          />
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        <div className="space-y-8">
+          {Object.keys(groupedAndFilteredSiswa).sort().map((kelasNama) => (
+            <section key={kelasNama}>
+              <h2 className="text-xl font-semibold text-gray-700 mb-4 ml-2">
+                Kelas: {kelasNama}
+              </h2>
+              <div className="overflow-x-auto bg-white rounded-lg shadow">
+                <table className="min-w-full w-full text-sm text-left text-gray-700">
+                  <thead className="bg-gray-100 text-xs text-gray-700 uppercase">
+                    <tr>
+                      <th className="p-4">Nama</th>
+                      <th className="p-4">Status Sesi</th>
+                      <th className="p-4">Status Ujian</th>
+                      <th className="p-4">Akun Terkunci</th>
+                      <th className="p-4">Update Terakhir</th>
+                      <th className="p-4 text-center">Operasi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {groupedAndFilteredSiswa[kelasNama].map((s) => (
+                      <tr key={s.id} className="border-b hover:bg-gray-50">
+                        <td className="p-4 font-medium text-gray-900">{s.name}</td>
+                        <td className="p-4"><StatusBadge status={s.status} /></td>
+                        <td className="p-4"><StatusBadge status={s.status_ujian} /></td>
+                        <td className="p-4 text-center">{s.login_locked ? "🔒" : "🔓"}</td>
+                        <td className="p-4">{s.last_update ? new Date(s.last_update).toLocaleString('id-ID') : "-"}</td>
+                        <td className="p-4">
+                          <div className="flex justify-center items-center flex-wrap gap-2">
+                            <ActionButton 
+                              onClick={() => openConfirmation('RESET', s, `Anda yakin ingin mereset ujian untuk ${s.name}?`)}
+                              icon="🔄" text="Reset" color="bg-yellow-500 hover:bg-yellow-600" tooltip="Reset Ujian"
+                            />
+                            <ActionButton 
+                              onClick={() => bukaModalTambahWaktu(s)}
+                              icon="⏱️" text="Waktu" color="bg-blue-500 hover:bg-blue-600" tooltip="Tambah Waktu"
+                            />
+                            <ActionButton 
+                              onClick={() => openConfirmation('LOGOUT', s, `Anda yakin ingin mengeluarkan ${s.name} dari sesi?`)}
+                              icon="🚪" text="Logout" color="bg-red-500 hover:bg-red-600" tooltip="Logout Paksa"
+                            />
+                            <ActionButton 
+                              onClick={() => openConfirmation('TOGGLE_LOCK', s, `Anda yakin ingin ${s.login_locked ? 'membuka kunci' : 'mengunci'} akun ${s.name}?`)}
+                              icon={s.login_locked ? "🔓" : "🔒"} text={s.login_locked ? "Buka" : "Kunci"} color={s.login_locked ? "bg-green-600 hover:bg-green-700" : "bg-gray-700 hover:bg-gray-800"} tooltip={s.login_locked ? "Buka Kunci Akun" : "Kunci Akun"}
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          ))}
         </div>
       )}
 

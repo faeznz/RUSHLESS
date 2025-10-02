@@ -15,4 +15,18 @@
     object-fit: contain;
     border-radius: 4px;
   }
-  
+
+@keyframes highlight-animation {
+  0% {
+    background-color: rgba(129, 140, 248, 0.3);
+    box-shadow: 0 0 0 4px rgba(129, 140, 248, 0.3);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: 0 0 0 0 rgba(129, 140, 248, 0);
+  }
+}
+
+.highlight-course {
+  animation: highlight-animation 2s ease-out;
+}
