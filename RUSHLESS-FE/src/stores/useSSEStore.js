@@ -95,10 +95,13 @@ const useSSEStore = create((set, get) => ({
               isOnline: p.isOnline,
               start_time: p.start_time,
               end_time: p.end_time,
+              login_locked: p.login_locked,
               lastUpdate: Date.now(),
             });
           });
         }
+
+        console.log("✅ SSE penguji pesertaOnline:", next);
 
         // jika array kosong, otomatis Map kosong → "Belum ada siswa online"
         set({ pesertaOnline: next });

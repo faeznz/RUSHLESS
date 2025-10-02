@@ -1,5 +1,5 @@
 const db = require("../models/database");
-const { broadcastLogout, broadcastTimerUpdate } = require("./examSSE");
+const { broadcastLogout, broadcastTimerUpdate, broadcastLock, broadcastUnlock } = require("./examSSE");
 
 exports.getSiswaWithStatus = async (req, res) => {
   try {
@@ -85,23 +85,36 @@ exports.resetUjian = async (req, res) => {
 };
 
 exports.logoutUser = async (req, res) => {
-  const { user_id } = req.body;
+  const { user_id, course_id } = req.body;
 
   try {
     const conn = await db;
 
-    // Set session status to offline using user_id
-    await conn.query(`
+    // Set session status to offline
+    await conn.query(
+      `
       INSERT INTO session_status (user_id, status, last_update)
       VALUES (?, 'offline', NOW())
       ON DUPLICATE KEY UPDATE status = 'offline'
-    `, [user_id]);
+    `,
+      [user_id]
+    );
 
-    // Broadcast ke SSE tetap pakai user_id
+    // Set exam status to not working
+    if (course_id) {
+      await conn.query(
+        `
+        UPDATE status_ujian SET status = 'Tidak Sedang Mengerjakan' 
+        WHERE user_id = ? AND course_id = ?
+      `,
+        [user_id, course_id]
+      );
+    }
+
+    // Broadcast to SSE
     broadcastLogout(user_id);
 
     res.json({ message: "✅ User berhasil logout dan status diset offline." });
-
   } catch (err) {
     console.error("❌ Logout gagal:", err.message);
     res.status(500).json({ message: "Server error" });
@@ -114,6 +127,7 @@ exports.lockLogin = async (req, res) => {
   try {
     const conn = await db;
     await conn.query("UPDATE users SET login_locked = 1 WHERE id = ?", [user_id]);
+    broadcastLock(user_id); // Tambahkan broadcast
     res.json({ message: "✅ Akun berhasil dikunci." });
   } catch (err) {
     console.error("❌ Gagal kunci akun:", err.message);
@@ -126,6 +140,7 @@ exports.unlockLogin = async (req, res) => {
   try {
     const conn = await db;
     await conn.query("UPDATE users SET login_locked = 0 WHERE id = ?", [user_id]);
+    broadcastUnlock(user_id); // Tambahkan broadcast
     res.json({ message: "✅ Akun berhasil dibuka kembali." });
   } catch (err) {
     console.error("❌ Gagal buka kunci akun:", err.message);

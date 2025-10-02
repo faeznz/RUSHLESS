@@ -19,6 +19,18 @@ exports.broadcastLogout = (user_id) => {
   clients.forEach(res => res.write(`event: unlock\ndata: ${payload}\n\n`));
 };
 
+// 📢 Broadcast Lock berdasarkan user_id
+exports.broadcastLock = (user_id) => {
+  const payload = JSON.stringify({ user_id });
+  clients.forEach(res => res.write(`event: lock\ndata: ${payload}\n\n`));
+};
+
+// 📢 Broadcast Unlock berdasarkan user_id
+exports.broadcastUnlock = (user_id) => {
+  const payload = JSON.stringify({ user_id });
+  clients.forEach(res => res.write(`event: unlock_account\ndata: ${payload}\n\n`));
+};
+
 // ✅ Broadcast Timer Update (tidak perlu diubah karena general)
 exports.broadcastTimerUpdate = () => {
   const payload = JSON.stringify({ type: "timer-updated" });

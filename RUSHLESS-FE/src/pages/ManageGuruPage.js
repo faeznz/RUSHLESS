@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { toast } from "../utils/toast";
 import api from "../api";
-import { FiSave, FiRotateCw } from "react-icons/fi";
+import { FiSave, FiRotateCw, FiSearch } from "react-icons/fi";
 
 const SkeletonLoader = () => (
   <div className="animate-pulse">
@@ -28,6 +28,7 @@ const ManageGuruPage = () => {
   const [initialPengajaran, setInitialPengajaran] = useState({});
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [search, setSearch] = useState("");
 
   const hasUnsavedChanges = useMemo(() => {
     return JSON.stringify(pengajaran) !== JSON.stringify(initialPengajaran);
@@ -92,7 +93,7 @@ const ManageGuruPage = () => {
 
   const handleSelectAllGuruForKelas = (kelas) => {
     const newPengajaran = { ...pengajaran };
-    guruList.forEach(guru => {
+    guruList.forEach((guru) => {
       if (!newPengajaran[guru.id]) {
         newPengajaran[guru.id] = [];
       }
@@ -102,12 +103,14 @@ const ManageGuruPage = () => {
     });
     setPengajaran(newPengajaran);
   };
-  
+
   const handleDeselectAllGuruForKelas = (kelas) => {
     const newPengajaran = { ...pengajaran };
-    guruList.forEach(guru => {
+    guruList.forEach((guru) => {
       if (newPengajaran[guru.id]) {
-        newPengajaran[guru.id] = newPengajaran[guru.id].filter(k => k !== kelas);
+        newPengajaran[guru.id] = newPengajaran[guru.id].filter(
+          (k) => k !== kelas
+        );
       }
     });
     setPengajaran(newPengajaran);
@@ -116,7 +119,6 @@ const ManageGuruPage = () => {
   const handleSimpan = async () => {
     setIsSaving(true);
     try {
-      // API call to save all changes
       await api.post("/guru-kelas/batch-update", { pengajaran });
       toast.success("Semua perubahan berhasil disimpan!");
       setInitialPengajaran(pengajaran);
@@ -133,10 +135,18 @@ const ManageGuruPage = () => {
     toast.info("Perubahan telah dibatalkan.");
   };
 
+  // 🔎 filter guru berdasarkan search
+  const filteredGuru = useMemo(() => {
+    return guruList.filter((guru) =>
+      guru.nama.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [search, guruList]);
+
   return (
     <div className="p-4 sm:p-6 bg-gray-50 min-h-screen">
       <div className="max-w-full mx-auto">
-        <div className="flex justify-between items-center mb-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-3">
           <h1 className="text-3xl font-bold text-gray-800">
             Manajemen Kelas Guru
           </h1>
@@ -145,9 +155,10 @@ const ManageGuruPage = () => {
               onClick={handleReset}
               disabled={!hasUnsavedChanges || isSaving}
               className={`flex items-center px-4 py-2 font-semibold text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm transition-all duration-200 ease-in-out
-                ${!hasUnsavedChanges || isSaving
-                  ? "opacity-50 cursor-not-allowed"
-                  : "hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                ${
+                  !hasUnsavedChanges || isSaving
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 }`}
             >
               <FiRotateCw className="mr-2" />
@@ -157,15 +168,28 @@ const ManageGuruPage = () => {
               onClick={handleSimpan}
               disabled={!hasUnsavedChanges || isSaving}
               className={`flex items-center px-4 py-2 font-semibold text-white rounded-md shadow-sm transition-all duration-200 ease-in-out
-                ${!hasUnsavedChanges || isSaving
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                ${
+                  !hasUnsavedChanges || isSaving
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 }`}
             >
               <FiSave className="mr-2" />
               {isSaving ? "Menyimpan..." : "Simpan Semua"}
             </button>
           </div>
+        </div>
+
+        {/* Search bar */}
+        <div className="mb-4 relative max-w-md">
+          <FiSearch className="absolute left-3 top-3 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Cari nama guru..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          />
         </div>
 
         {loading ? (
@@ -175,16 +199,35 @@ const ManageGuruPage = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
                     Nama Guru
                   </th>
                   {kelasList.map((kelas) => (
-                    <th key={kelas} scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th
+                      key={kelas}
+                      scope="col"
+                      className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
                       <div className="flex flex-col items-center">
                         <span>{kelas}</span>
                         <div className="flex space-x-1 mt-1">
-                          <button onClick={() => handleSelectAllGuruForKelas(kelas)} className="text-xs text-blue-500 hover:text-blue-700">All</button>
-                          <button onClick={() => handleDeselectAllGuruForKelas(kelas)} className="text-xs text-red-500 hover:text-red-700">None</button>
+                          <button
+                            onClick={() => handleSelectAllGuruForKelas(kelas)}
+                            className="text-xs text-blue-500 hover:text-blue-700"
+                          >
+                            All
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleDeselectAllGuruForKelas(kelas)
+                            }
+                            className="text-xs text-red-500 hover:text-red-700"
+                          >
+                            None
+                          </button>
                         </div>
                       </div>
                     </th>
@@ -192,27 +235,59 @@ const ManageGuruPage = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {guruList.map((guru) => (
-                  <tr key={guru.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="font-medium text-gray-900">{guru.nama}</div>
-                      <div className="flex space-x-1 mt-1">
-                        <button onClick={() => handleSelectAllKelasForGuru(guru.id)} className="text-xs text-blue-500 hover:text-blue-700">All</button>
-                        <button onClick={() => handleDeselectAllKelasForGuru(guru.id)} className="text-xs text-red-500 hover:text-red-700">None</button>
-                      </div>
+                {filteredGuru.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={kelasList.length + 1}
+                      className="px-6 py-4 text-center text-gray-500"
+                    >
+                      Guru tidak ditemukan
                     </td>
-                    {kelasList.map((kelas) => (
-                      <td key={kelas} className="px-6 py-4 whitespace-nowrap text-center">
-                        <input
-                          type="checkbox"
-                          className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                          checked={pengajaran[guru.id]?.includes(kelas) || false}
-                          onChange={() => handleCheckboxChange(guru.id, kelas)}
-                        />
-                      </td>
-                    ))}
                   </tr>
-                ))}
+                ) : (
+                  filteredGuru.map((guru) => (
+                    <tr key={guru.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="font-medium text-gray-900">
+                          {guru.nama}
+                        </div>
+                        <div className="flex space-x-1 mt-1">
+                          <button
+                            onClick={() => handleSelectAllKelasForGuru(guru.id)}
+                            className="text-xs text-blue-500 hover:text-blue-700"
+                          >
+                            All
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleDeselectAllKelasForGuru(guru.id)
+                            }
+                            className="text-xs text-red-500 hover:text-red-700"
+                          >
+                            None
+                          </button>
+                        </div>
+                      </td>
+                      {kelasList.map((kelas) => (
+                        <td
+                          key={kelas}
+                          className="px-6 py-4 whitespace-nowrap text-center"
+                        >
+                          <input
+                            type="checkbox"
+                            className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                            checked={
+                              pengajaran[guru.id]?.includes(kelas) || false
+                            }
+                            onChange={() =>
+                              handleCheckboxChange(guru.id, kelas)
+                            }
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

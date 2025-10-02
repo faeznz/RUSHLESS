@@ -29,7 +29,7 @@ async function broadcastPenguji(courseId) {
 
   // merge semua data dengan isOnline dari live SSE map
   const payload = list.map(
-    ({ userId, name, username, kelas, status, start_time, end_time }) => ({
+    ({ userId, name, username, kelas, status, start_time, end_time, login_locked }) => ({
       userId,
       username,
       name,
@@ -37,6 +37,7 @@ async function broadcastPenguji(courseId) {
       status,
       start_time,
       end_time,
+      login_locked,
       isOnline: clientsOnlinePeserta.has(String(userId)),
     })
   );
@@ -188,7 +189,7 @@ async function registerSSEPenguji(req, res) {
 
   // 🔍 Ambil semua user yang termasuk kelas tersebut
   const [users] = await db.query(
-    `SELECT id, name, kelas, username FROM users WHERE kelas IN (?)`,
+    `SELECT id, name, kelas, username, login_locked FROM users WHERE kelas IN (?)`,
     [kelasList]
   );
 
@@ -215,6 +216,7 @@ async function registerSSEPenguji(req, res) {
       status: s.status || "inactive",
       start_time: s.start_time,
       end_time: s.end_time,
+      login_locked: u.login_locked,
       isOnline: clientsOnlinePeserta.has(u.id), // ambil dari SSE map, bukan DB
     };
   });
@@ -227,6 +229,7 @@ async function registerSSEPenguji(req, res) {
       name: p.name,
       courseId,
       kelas: p.kelas,
+      login_locked: p.login_locked,
       isOnline: p.isOnline,
       start_time: p.start_time,
       end_time: p.end_time,

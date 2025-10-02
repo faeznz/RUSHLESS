@@ -46,6 +46,7 @@ function DoExamPage() {
   const [essayQuestions, setEssayQuestions] = useState([]);
   const [isLoadingAccess, setIsLoadingAccess] = useState(true);
   const [isAccessAllowed, setIsAccessAllowed] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
 
   useEffect(() => {
     const verifyAccess = async () => {
@@ -263,25 +264,62 @@ function DoExamPage() {
 
   useEffect(() => {
     const sse = new EventSource(`${api.defaults.baseURL}/exam/session/stream`);
+    const currentUserId = Cookies.get("user_id");
+
+    const handleSseMessage = (event, eventName) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.user_id && data.user_id.toString() === currentUserId) {
+          console.log(`SSE '${eventName}' received for current user.`);
+          return true;
+        }
+      } catch (e) {
+        console.error(`Failed to parse SSE ${eventName} event:`, e);
+      }
+      return false;
+    };
+
+    sse.addEventListener('lock', (e) => {
+      if (handleSseMessage(e, 'lock')) {
+        setIsLocked(true);
+      }
+    });
+
+    sse.addEventListener('unlock_account', (e) => {
+      if (handleSseMessage(e, 'unlock_account')) {
+        setIsLocked(false);
+      }
+    });
 
     sse.addEventListener('unlock', (e) => {
-      const data = JSON.parse(e.data);
-      const currentUserId = Cookies.get("user_id");
+      if (handleSseMessage(e, 'unlock')) {
+        // Clear all cookies
+        const cookies = document.cookie.split(";");
+        for (let i = 0; i < cookies.length; i++) {
+            let cookie = cookies[i];
+            let eqPos = cookie.indexOf("=");
+            let name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+            document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+        }
+        
+        alert("Anda telah dikeluarkan oleh pengawas.");
 
-      if (data.user_id && data.user_id.toString() === currentUserId) {
-        console.log("SSE 'unlock' received for current user. Closing app.");
+        // Try to close secure browser first
         if (window.chrome && window.chrome.webview) {
           window.chrome.webview.postMessage({ type: 'unlock' });
         } else if (window.Android) {
           window.Android.postMessage(JSON.stringify({ type: 'unlock' }));
         }
+
+        // Fallback to navigate to login
+        navigate("/login", { replace: true });
       }
     });
 
     return () => {
       sse.close();
     };
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     if (showStartModal) return;
@@ -881,6 +919,20 @@ const handleSelesaiUjian = async () => {
     return waktuSisa <= minWaktuSubmit * 60;
   };   
 
+  if (isLocked) {
+    return (
+      <div className="fixed inset-0 bg-gray-900 bg-opacity-80 flex justify-center items-center z-50">
+        <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md text-center">
+          <FiAlertTriangle className="text-red-500 mx-auto text-5xl mb-4" />
+          <h2 className="text-2xl font-bold mb-2 text-gray-800">Akun Anda Dikunci</h2>
+          <p className="mb-6 text-gray-600">
+            Pengawas telah mengunci akun Anda. Harap tunggu instruksi selanjutnya.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoadingAccess) {
     return (
       <div className="flex justify-center items-center h-screen bg-gray-50 text-gray-600">
@@ -966,32 +1018,31 @@ const handleSelesaiUjian = async () => {
             >
               Kembali
             </button>
-            <button
-              onClick={async () => {
-                try {
-                  const user_id = Cookies.get("user_id");
-                  const token = Cookies.get("token");
+              <button
+                onClick={async () => {
+                  try {
+                    const user_id = Cookies.get("user_id");
+                    const token = Cookies.get("token");
 
-                  if (!user_id || !token) {
-                    alert("User belum login atau token hilang.");
-                    return;
+                    if (!user_id || !token) {
+                      alert("User belum login atau token hilang.");
+                      return;
+                    }
+
+                    await api.post("/exam/status", {
+                      user_id,
+                      course_id: courseId,
+                      status: `Mengerjakan - ${courseTitle}`,
+                    });
+
+                    navigate(`/courses/${courseId}/do`);
+
+                    setShowStartModal(false);
+                  } catch (err) {
+                    console.error("❌ Gagal memulai ujian:", err);
+                    alert("Gagal memulai ujian. Coba lagi.");
                   }
-
-                  await api.post("/exam/status", {
-                    user_id,
-                    course_id: courseId,
-                    status: `Mengerjakan - ${courseTitle}`,
-                  });
-
-                  navigate(`/courses/${courseId}/do`);
-
-                  setShowStartModal(false);
-                } catch (err) {
-                  console.error("❌ Gagal memulai ujian:", err);
-                  alert("Gagal memulai ujian. Coba lagi.");
-                }
-              }}
-              className="px-6 py-2 rounded-lg font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                }}
             >
               Mulai Kerjakan
             </button>

@@ -10,18 +10,23 @@ const StatusBadge = ({ status }) => {
     online: { text: "Online", color: "bg-green-100 text-green-800" },
     offline: { text: "Offline", color: "bg-gray-200 text-gray-800" },
     mengerjakan: { text: "Mengerjakan", color: "bg-blue-100 text-blue-800" },
-    selesai: { text: "Selesai", color: "bg-purple-100 text-purple-800" },
+    selesai: { text: "Tidak Sedang Mengerjakan", color: "bg-gray-200 text-gray-800" },
+    sudah_mengerjakan: { text: "Tidak Sedang Mengerjakan", color: "bg-gray-200 text-gray-800" },
+    'tidak sedang mengerjakan': { text: "Tidak Sedang Mengerjakan", color: "bg-gray-200 text-gray-800" },
+    inactive: { text: "Tidak Sedang Mengerjakan", color: "bg-gray-200 text-gray-800" },
+    masuk_room: { text: "Online", color: "bg-green-100 text-green-800" },
   };
   const currentStatus = statusMap[status?.toLowerCase()] || { text: status || "-", color: "bg-gray-100 text-gray-600" };
   return <span className={`px-2 py-1 text-xs font-medium rounded-full ${currentStatus.color}`}>{currentStatus.text}</span>;
 };
 
 // Komponen Tombol Aksi dengan Ikon dan Tooltip
-const ActionButton = ({ onClick, icon, text, color, tooltip }) => (
+const ActionButton = ({ onClick, icon, text, color, tooltip, disabled }) => (
   <button
     onClick={onClick}
     title={tooltip}
-    className={`flex items-center gap-1 px-2 py-1 text-white rounded text-xs transition-transform transform hover:scale-105 ${color}`}
+    disabled={disabled}
+    className={`flex items-center gap-1 px-2 py-1 text-white rounded text-xs transition-transform transform hover:scale-105 ${color} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
   >
     {icon} <span className="hidden sm:inline">{text}</span>
   </button>
@@ -239,7 +244,9 @@ export default function ManageExamPage() {
                       <th className="p-4">Nama</th>
                       <th className="p-4">Status Sesi</th>
                       <th className="p-4">Status Ujian</th>
-                      <th className="p-4">Akun Terkunci</th>
+                      <th className="p-4">Waktu Mulai</th>
+                      <th className="p-4">Waktu Selesai</th>
+                      <th className="p-4">Status Kunci Akun</th>
                       <th className="p-4">Update Terakhir</th>
                       <th className="p-4 text-center">Operasi</th>
                     </tr>
@@ -250,7 +257,9 @@ export default function ManageExamPage() {
                         <td className="p-4 font-medium text-gray-900">{s.name}</td>
                         <td className="p-4"><StatusBadge status={s.status} /></td>
                         <td className="p-4"><StatusBadge status={s.status_ujian} /></td>
-                        <td className="p-4 text-center">{s.login_locked ? "🔒" : "🔓"}</td>
+                        <td className="p-4">{s.start_time ? new Date(s.start_time).toLocaleString('id-ID') : "-"}</td>
+                        <td className="p-4">{s.end_time ? new Date(s.end_time).toLocaleString('id-ID') : "-"}</td>
+                        <td className="p-4 text-center">{s.login_locked ? "🔒 Terkunci" : "🔓 Terbuka"}</td>
                         <td className="p-4">{s.last_update ? new Date(s.last_update).toLocaleString('id-ID') : "-"}</td>
                         <td className="p-4">
                           <div className="flex justify-center items-center flex-wrap gap-2">
@@ -261,14 +270,17 @@ export default function ManageExamPage() {
                             <ActionButton 
                               onClick={() => bukaModalTambahWaktu(s)}
                               icon="⏱️" text="Waktu" color="bg-blue-500 hover:bg-blue-600" tooltip="Tambah Waktu"
+                              disabled={s.status === 'offline'}
                             />
                             <ActionButton 
                               onClick={() => openConfirmation('LOGOUT', s, `Anda yakin ingin mengeluarkan ${s.name} dari sesi?`)}
                               icon="🚪" text="Logout" color="bg-red-500 hover:bg-red-600" tooltip="Logout Paksa"
+                              disabled={s.status === 'offline'}
                             />
                             <ActionButton 
                               onClick={() => openConfirmation('TOGGLE_LOCK', s, `Anda yakin ingin ${s.login_locked ? 'membuka kunci' : 'mengunci'} akun ${s.name}?`)}
                               icon={s.login_locked ? "🔓" : "🔒"} text={s.login_locked ? "Buka" : "Kunci"} color={s.login_locked ? "bg-green-600 hover:bg-green-700" : "bg-gray-700 hover:bg-gray-800"} tooltip={s.login_locked ? "Buka Kunci Akun" : "Kunci Akun"}
+                              disabled={s.status === 'offline'}
                             />
                           </div>
                         </td>

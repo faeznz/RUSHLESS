@@ -77,7 +77,7 @@ export default function ExamMonitor() {
 
   const handleKick = async (user) => {
     try {
-      await api.post("/exam/logout-user", { user_id: user.id });
+      await api.post("/exam/logout-user", { user_id: user.id, course_id: courseId });
       toast.success(`✅ ${user.name} berhasil logout`);
     } catch (err) {
       console.error(err);
@@ -86,17 +86,32 @@ export default function ExamMonitor() {
   };
 
   const handleReset = async (user) => {
-  try {
-    await api.delete(`/exam/reset/${courseId}`, {
-      data: { user_id: user.id }  // <-- payload dikirim di sini
-    });
-    window.location.reload();
-    toast.success(`✅ ${user.name} berhasil reset`);
-  } catch (err) {
-    console.error(err);
-    toast.error(`❌ Gagal reset ${user.name}`);
-  }
-};
+    try {
+      await api.delete(`/exam/reset/${courseId}`, {
+        data: { user_id: user.id },
+      });
+      toast.success(`✅ ${user.name} berhasil reset`);
+      // SSE should update the list automatically, no need to reload
+    } catch (err) {
+      console.error(err);
+      toast.error(`❌ Gagal reset ${user.name}`);
+    }
+  };
+
+  const handleToggleLock = async (user) => {
+    const action = user.login_locked ? "unlock" : "lock";
+    const endpoint = `/exam/${action}-user`;
+    try {
+      await api.post(endpoint, { user_id: user.id });
+      toast.success(
+        `✅ Akun ${user.name} berhasil di-${action === "lock" ? "kunci" : "buka"}.`
+      );
+      // SSE should update the UI
+    } catch (err) {
+      console.error(err);
+      toast.error(`❌ Gagal ${action} akun ${user.name}`);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -158,9 +173,6 @@ export default function ExamMonitor() {
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
                     Selesai
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                    Tanggal
-                  </th>
                   <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">
                     Aksi
                   </th>
@@ -194,55 +206,33 @@ export default function ExamMonitor() {
                     </td>
                     <td className="px-4 py-3 text-gray-900">
                       {s.start_time
-                        ? formatter.formatTimeOnly(new Date(s.start_time))
+                        ? formatter.formatDateTime(new Date(s.start_time))
                         : "-"}
                     </td>
                     <td className="px-4 py-3 text-gray-900">
                       {s.end_time
-                        ? formatter.formatTimeOnly(new Date(s.end_time))
-                        : "-"}
-                    </td>
-                    <td className="px-4 py-3 text-gray-900">
-                      {s.start_time
-                        ? formatter.formatDateOnly(new Date(s.start_time))
+                        ? formatter.formatDateTime(new Date(s.end_time))
                         : "-"}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex gap-2 justify-center">
                         <button
                           onClick={() => handleReset(s)}
-                          disabled={s.status !== "mengerjakan" && s.status !== "sudah_mengerjakan"}
-                          className={`px-3 py-1 rounded-lg text-sm font-medium transition
-                            ${
-                              s.status === "mengerjakan" || s.status === "sudah_mengerjakan"
-                                ? "bg-red-500 text-white hover:bg-red-600 active:scale-95"
-                                : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                            }`}
-                        >
+                          disabled={s.status === "inactive"}
+                          className={`px-3 py-1 rounded-lg text-sm font-medium transition ${s.status !== "inactive" ? "bg-yellow-500 text-white hover:bg-yellow-600 active:scale-95" : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}>
                           Reset
                         </button>
                         <button
                           onClick={() => handleKick(s)}
-                          disabled={s.status !== "mengerjakan" && s.status !== "sudah_mengerjakan"}
-                          className={`px-3 py-1 rounded-lg text-sm font-medium transition
-                            ${
-                              s.status === "mengerjakan" || s.status === "sudah_mengerjakan"
-                                ? "bg-red-500 text-white hover:bg-red-600 active:scale-95"
-                                : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                            }`}
-                        >
+                          disabled={!s.isOnline}
+                          className={`px-3 py-1 rounded-lg text-sm font-medium transition ${s.isOnline ? "bg-red-500 text-white hover:bg-red-600 active:scale-95" : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}>
                           Kick
                         </button>
                         <button
-                          disabled={s.status !== "mengerjakan"}
-                          className={`px-3 py-1 rounded-lg text-sm font-medium transition
-                            ${
-                              s.status === "mengerjakan"
-                                ? "bg-gray-200 text-gray-700 hover:bg-gray-300 active:scale-95"
-                                : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                            }`}
-                        >
-                          Lock
+                          onClick={() => handleToggleLock(s)}
+                          disabled={!s.isOnline && !s.login_locked}
+                          className={`px-3 py-1 rounded-lg text-sm font-medium transition ${(!s.isOnline && !s.login_locked) ? "bg-gray-200 text-gray-400 cursor-not-allowed" : s.login_locked ? "bg-green-500 text-white hover:bg-green-600 active:scale-95" : "bg-gray-700 text-white hover:bg-gray-800 active:scale-95"}`}>
+                          {s.login_locked ? "Unlock" : "Lock"}
                         </button>
                       </div>
                     </td>
