@@ -130,16 +130,23 @@ const ExamResultPage = () => {
   useEffect(() => {
     const fetchResult = async () => {
       setLoading(true);
+      setError(null);
       try {
+        // The backend now provides all necessary data in a single call.
         const res = await api.get(`/courses/${courseId}/user/${userId}/hasil?attemp=${attemp}`);
-        if (res.data && res.data.length > 0) {
-          setExamData({
-            questions: res.data,
-            studentName: res.data[0].siswa_name || 'Siswa',
-          });
-        } else {
-          setError('Data kosong atau tidak ditemukan.');
+        const resultData = res.data;
+
+        // The array of questions/answers is nested in the `data` property.
+        if (!resultData || !Array.isArray(resultData.data) || resultData.data.length === 0) {
+          setError('Data hasil ujian tidak valid atau tidak ditemukan.');
+          return;
         }
+
+        setExamData({
+          questions: resultData.data,
+          studentName: resultData.data[0]?.siswa_name || 'Siswa',
+        });
+
       } catch (err) {
         console.error('❌ Gagal ambil hasil ujian:', err);
         setError('Tidak dapat memuat hasil ujian. Silakan coba lagi nanti.');
