@@ -122,36 +122,43 @@ const StudentRow = ({ student, courseId, totalSoal }) => {
               <h4 className="text-sm font-semibold text-gray-600 mb-3">Riwayat Percobaan:</h4>
               {student.attempts
                 .sort((a, b) => a.attemp - b.attemp)
-                .map(attempt => (
-                  <div key={attempt.attemp} className="flex flex-col sm:flex-row items-start sm:items-center justify-between py-2 border-b border-gray-200 last:border-b-0">
-                    <div>
-                      <span className="font-semibold">Percobaan Ke-{attempt.attemp}</span>
-                      <div className="text-xs text-gray-500 flex gap-4 mt-1 flex-wrap">
-                        <span>Benar: <span className="text-green-600 font-medium">{attempt.benar}</span></span>
-                        <span>Salah: <span className="text-red-600 font-medium">{attempt.salah}</span></span>
-                        <span>Durasi: <span className="text-blue-600 font-medium">{formatDurasi(attempt.durasi_pengerjaan)}</span></span>
+                .map(attempt => {
+                  const benar = attempt.benar || 0;
+                  const salah = attempt.salah || 0;
+                  const tidakDijawab = totalSoal > 0 ? totalSoal - benar - salah : 0;
+
+                  return (
+                    <div key={attempt.attemp} className="flex flex-col sm:flex-row items-start sm:items-center justify-between py-2 border-b border-gray-200 last:border-b-0">
+                      <div>
+                        <span className="font-semibold">Percobaan Ke-{attempt.attemp}</span>
+                        <div className="text-xs text-gray-500 flex gap-4 mt-1 flex-wrap">
+                          <span>Benar: <span className="text-green-600 font-medium">{benar}</span></span>
+                          <span>Salah: <span className="text-red-600 font-medium">{salah}</span></span>
+                          <span>Tidak Dijawab: <span className="text-yellow-600 font-medium">{tidakDijawab < 0 ? 0 : tidakDijawab}</span></span>
+                          <span>Durasi: <span className="text-blue-600 font-medium">{formatDurasi(attempt.durasi_pengerjaan)}</span></span>
+                        </div>
                       </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/courses/${courseId}/log/${attempt.user_id}/${attempt.attemp}`);
+                        }}
+                        className="mt-2 sm:mt-0 px-3 py-1 text-sm text-blue-600 border border-blue-600 hover:bg-blue-50 rounded-md transition-all"
+                      >
+                        Lihat Log
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/courses/${courseId}/${attempt.user_id}/${attempt.attemp}/hasil`);
+                        }}
+                        className="mt-2 sm:mt-0 px-3 py-1 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-all"
+                      >
+                        Lihat Hasil
+                      </button>
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/courses/${courseId}/log/${attempt.user_id}/${attempt.attemp}`);
-                      }}
-                      className="mt-2 sm:mt-0 px-3 py-1 text-sm text-blue-600 border border-blue-600 hover:bg-blue-50 rounded-md transition-all"
-                    >
-                      Lihat Log
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/courses/${courseId}/${attempt.user_id}/${attempt.attemp}/hasil`);
-                      }}
-                      className="mt-2 sm:mt-0 px-3 py-1 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-all"
-                    >
-                      Lihat Hasil
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
             </div>
           </div>
         )}
