@@ -193,14 +193,14 @@ function ManageCoursePage() {
     if (file && file.name.endsWith(".docx")) {
       setSelectedFile(file);
     } else {
-      toast.error("Hanya file .zip yang didukung!");
+      toast.error("Hanya file .docx yang didukung!");
       setSelectedFile(null);
     }
   };
 
   const handleUploadAndProcessZip = async () => {
     if (!selectedFile) {
-      return toast.error("Pilih file .zip terlebih dahulu!");
+      return toast.error("Pilih file .docx terlebih dahulu!");
     }
 
     const formData = new FormData();
@@ -216,8 +216,8 @@ function ManageCoursePage() {
       setIsPreviewModalOpen(true);
       toast.success("Soal berhasil diparsing! Tinjau sebelum menerapkan.");
     } catch (err) {
-      console.error("Gagal memproses file .zip:", err);
-      toast.error("Gagal memproses file .zip.");
+      console.error("Gagal memproses file .docx:", err);
+      toast.error("Gagal memproses file .docx.");
     }
   };
 
@@ -1049,7 +1049,7 @@ function ManageCoursePage() {
                 htmlFor="upload-soal"
                 className="block text-sm font-medium text-gray-600 mb-2"
               >
-                📤 Upload Soal (.zip)
+                📤 Upload Soal (.docx)
               </label>
               <div className="flex items-center gap-4">
                 <input

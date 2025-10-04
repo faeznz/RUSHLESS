@@ -1,12 +1,2 @@
-[2025-10-02 06:47:57] GET /api/v1/ujian/course/1/2/permission - 127.0.0.1
-checkPermission: 2 1
-Error checkPermission: Error: Unknown column 'attempt' in 'SELECT'
-    at PromisePool.query (D:\RushlesServer\RUSHLESS\RUSHLESS-BE-EXAM\node_modules\mysql2\lib\promise\pool.js:36:22)
-    at checkPermission (D:\RushlesServer\RUSHLESS\RUSHLESS-BE-EXAM\controllers\permissionCourseController.js:87:37)
-    at process.processTicksAndRejections (node:internal/process/task_queues:105:5) {
-  code: 'ER_BAD_FIELD_ERROR',
-  errno: 1054,
-  sql: "SELECT status, attempt FROM status_ujian WHERE user_id = '2' AND course_id = '1' ORDER BY attempt DESC LIMIT 1",
-  sqlState: '42S22',
-  sqlMessage: "Unknown column 'attempt' in 'SELECT'"
-}
+❌ Gagal ambil hasil ujian: TypeError: studentAnswers.map is not a function
+    at fetchResult (ExamResultPage.js:156:1)
