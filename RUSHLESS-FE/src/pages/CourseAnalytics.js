@@ -68,7 +68,7 @@ const formatDurasi = (detik) => {
     return jam === "00" ? `${menit}:${dtk}` : `${jam}:${menit}:${dtk}`;
 };
 
-const StudentRow = ({ student, courseId }) => {
+const StudentRow = ({ student, courseId, totalSoal }) => {
     const [isOpen, setIsOpen] = useState(false);
     const navigate = useNavigate();
 
@@ -77,12 +77,13 @@ const StudentRow = ({ student, courseId }) => {
         return { bestScore: 0, totalAttempts: 0, progress: 0 };
       }
       const bestAttempt = student.attempts.reduce((prev, current) => (prev.benar > current.benar) ? prev : current);
+      const progress = totalSoal > 0 ? (bestAttempt.benar / totalSoal) * 100 : 0;
       return {
         bestScore: bestAttempt.benar,
         totalAttempts: student.attempts.length,
-        progress: (bestAttempt.benar / bestAttempt.total_dikerjakan) * 100
+        progress: progress
       };
-    }, [student.attempts]);
+    }, [student.attempts, totalSoal]);
 
     return (
       <div className="border-b border-gray-200">
@@ -102,7 +103,7 @@ const StudentRow = ({ student, courseId }) => {
                 {Math.round(summary.progress)} <span className="text-sm text-gray-500">/ 100</span>
               </span>
               <p className="text-xs text-gray-500">
-                ({summary.bestScore} benar dari {student.attempts[0]?.total_dikerjakan || '-'} soal)
+                ({summary.bestScore} benar dari {totalSoal > 0 ? totalSoal : '-'} soal)
               </p>
           </div>
           <div className="w-full md:flex-1 flex items-center gap-4">
@@ -221,15 +222,16 @@ const AnalyticsPage = () => {
     const { id: courseId } = useParams();
     const navigate = useNavigate();
     const [analytics, setAnalytics] = useState([]);
+    const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(true);
-        const [error, setError] = useState(null);
+    const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedClass, setSelectedClass] = useState("");
     const [showExportModal, setShowExportModal] = useState(false);
     const [kelasToExport, setKelasToExport] = useState("");
     const [maxAttempts, setMaxAttempts] = useState(0);
     const [selectedAttempts, setSelectedAttempts] = useState([]);
-        const [isExporting, setIsExporting] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
 
     useEffect(() => {
       fetchMaxAttempts(kelasToExport);
@@ -270,9 +272,9 @@ const AnalyticsPage = () => {
         setError(null);
       } catch (err) {
         console.error("❌ Gagal ambil analytics:", err);
-        setError(err.message || "Terjadi kesalahan.");
+        // Do not overwrite main error if polling fails, just log it
       } finally {
-        if (loading) setLoading(false);
+        // Only set loading false on initial load, which is handled in the other useEffect
       }
     };
 
@@ -287,8 +289,25 @@ const AnalyticsPage = () => {
     };    
 
     useEffect(() => {
-      setLoading(true);
-      fetchAnalytics();
+      const fetchInitialData = async () => {
+        setLoading(true);
+        try {
+          const [analyticsRes, questionsRes] = await Promise.all([
+            api.get(`/courses/analytics/${courseId}`),
+            api.get(`/courses/${courseId}/questions`)
+          ]);
+          setAnalytics(analyticsRes.data);
+          setQuestions(questionsRes.data || []);
+          setError(null);
+        } catch (err) {
+          console.error("❌ Gagal ambil data awal:", err);
+          setError(err.message || "Terjadi kesalahan.");
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchInitialData();
       const interval = setInterval(fetchAnalytics, 15000);
       return () => clearInterval(interval);
     }, [courseId]);
@@ -344,10 +363,11 @@ const AnalyticsPage = () => {
       let totalPersentase = 0;
       let highestPersen = 0;
       let lowestPersen = 100;
+
+      const totalSoal = questions.length > 0 ? questions.length : 1;
     
       analytics.forEach((u) => {
-        const total = u.total_dikerjakan || 1;
-        const persen = (u.benar / total) * 100;
+        const persen = (u.benar / totalSoal) * 100;
         totalPersentase += persen;
         if (persen > highestPersen) highestPersen = persen;
         if (persen < lowestPersen) lowestPersen = persen;
@@ -355,7 +375,7 @@ const AnalyticsPage = () => {
     
       const avgScore = (totalAttempts > 0 ? totalPersentase / totalAttempts : 0).toFixed(1);
       const highestScore = highestPersen.toFixed(1);
-      const lowestScore = lowestPersen.toFixed(1);
+      const lowestScore = analytics.length > 0 ? lowestPersen.toFixed(1) : "0.0";
     
       return {
         totalUsers,
@@ -364,7 +384,7 @@ const AnalyticsPage = () => {
         lowestScore,
         totalAttempts,
       };
-    }, [analytics]);
+    }, [analytics, questions]);
     
     const uniqueClasses = useMemo(() => {
       if (!analytics || analytics.length === 0) return [];
@@ -549,7 +569,7 @@ const AnalyticsPage = () => {
                             Kelas: {classGroup.className}
                           </h4>
                           {classGroup.students.map(student => (
-                            <StudentRow key={student.user_id} student={student} courseId={courseId} />
+                            <StudentRow key={student.user_id} student={student} courseId={courseId} totalSoal={questions.length} />
                           ))}
                         </div>
                       ))}
