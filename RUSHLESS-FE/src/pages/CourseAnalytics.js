@@ -166,7 +166,7 @@ const StudentRow = ({ student, courseId, totalSoal }) => {
     );
 };
 
-const exportToExcel = (group, selectedAttempts, pointPerQuestion) => {
+const exportToExcel = (group, selectedAttempts, pointPerQuestion, questions) => {
   const workbook = XLSX.utils.book_new();
   const sheetData = [];
 
@@ -177,7 +177,7 @@ const exportToExcel = (group, selectedAttempts, pointPerQuestion) => {
     sheetData.push([`Attempt ${attemptNumber}`]);
 
     const attemptStudents = group.students.filter(s => s.attempts.some(a => a.attemp === attemptNumber));
-    const soalCount = attemptStudents[0]?.attempts.find(a => a.attemp === attemptNumber)?.total_dikerjakan || 10;
+    const soalCount = questions.length;
     const soalHeaders = Array.from({ length: soalCount }, (_, i) => `Soal ${i + 1}`);
     const headers = ['Kelas', 'Nama', 'Skor', ...soalHeaders];
     sheetData.push(headers);
@@ -190,15 +190,22 @@ const exportToExcel = (group, selectedAttempts, pointPerQuestion) => {
       if (!attempt) return;
 
       studentCount++;
-      const jawaban = attempt.detail_jawaban || [];
-      const skor = jawaban.reduce((acc, j) => acc + (j ? pointPerQuestion : 0), 0);
+      const studentAnswersAsBooleans = attempt.detail_jawaban || []; // This is an array of booleans for attempted questions
+      
+      // Create a full-length array representing all questions, defaulting to false (incorrect/unanswered)
+      const answerCorrectness = Array.from({ length: soalCount }, (_, i) => {
+        return studentAnswersAsBooleans[i] || false;
+      });
+
+      const correctCount = answerCorrectness.filter(Boolean).length;
+      const skor = correctCount * pointPerQuestion;
       totalSkor += skor;
 
       const row = [
         student.kelas,
         student.name,
         skor.toFixed(1),
-        ...Array.from({ length: soalCount }, (_, i) => (jawaban[i] ? pointPerQuestion : 0))
+        ...answerCorrectness.map(isCorrect => (isCorrect ? pointPerQuestion : 0))
       ];
       sheetData.push(row);
     });
@@ -209,7 +216,6 @@ const exportToExcel = (group, selectedAttempts, pointPerQuestion) => {
       sheetData.push(avgRow);
     }
 
-    // Add 2 blank rows if it's not the last attempt
     if (index < sortedAttempts.length - 1) {
       sheetData.push([]);
       sheetData.push([]);
@@ -519,31 +525,38 @@ const AnalyticsPage = () => {
                               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
                               onClick={async () => {
                                 setIsExporting(true);
-                                const group = groupedAndSortedData.find(g => g.className === kelasToExport);
-                                if (!group) {
-                                  setIsExporting(false);
-                                  return;
-                                }
+                                try {
+                                  const group = groupedAndSortedData.find(g => g.className === kelasToExport);
+                                  if (!group) return;
 
-                                const firstStudentWithAttempts = group.students.find(s => s.attempts.length > 0);
-                                const soalCount = firstStudentWithAttempts?.attempts[0]?.total_dikerjakan || 10;
-                                const pointPerQuestion = 100 / soalCount;
+                                  // Use the questions from the state, which are already fetched
+                                  if (questions.length === 0) {
+                                    console.error("Tidak ada soal yang ditemukan untuk course ini.");
+                                    // Consider showing an error toast to the user
+                                    return;
+                                  }
 
-                                for (const student of group.students) {
-                                  for (const attempt of student.attempts) {
-                                    if (selectedAttempts.includes(attempt.attemp)) {
-                                      // Load detail only if not already loaded
-                                      if (!attempt.detail_jawaban) {
-                                        const detail = await loadJawabanDetail(courseId, student.user_id, attempt.attemp);
-                                        attempt.detail_jawaban = detail;
+                                  const pointPerQuestion = 100 / questions.length;
+
+                                  for (const student of group.students) {
+                                    for (const attempt of student.attempts) {
+                                      if (selectedAttempts.includes(attempt.attemp)) {
+                                        if (!attempt.detail_jawaban) {
+                                          const detail = await loadJawabanDetail(courseId, student.user_id, attempt.attemp);
+                                          attempt.detail_jawaban = detail;
+                                        }
                                       }
                                     }
                                   }
-                                }
 
-                                exportToExcel(group, selectedAttempts, pointPerQuestion);
-                                setIsExporting(false);
-                                setShowExportModal(false);
+                                  exportToExcel(group, selectedAttempts, pointPerQuestion, questions);
+                                  setShowExportModal(false);
+                                } catch (err) {
+                                  console.error("Gagal mengekspor data:", err);
+                                  // Optionally, set an error state to show a message to the user
+                                } finally {
+                                  setIsExporting(false);
+                                }
                               }}
                             >
                               {isExporting ? (
