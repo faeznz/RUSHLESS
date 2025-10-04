@@ -49,14 +49,18 @@ const AnswerSummaryPage = () => {
       setLoading(true);
       try {
         const res = await api.get(`/courses/${courseId}/user/${userId}/hasil?attemp=${attemp}`);
-        if (res.data && res.data.length > 0) {
-          setExamData({
-            questions: res.data,
-            studentName: res.data[0].siswa_name || 'Siswa',
-          });
-        } else {
-          setError('Data tidak ditemukan.');
+        const resultData = res.data;
+
+        // The actual array is in the 'data' property.
+        if (!resultData || !Array.isArray(resultData.data) || resultData.data.length === 0) {
+          setError('Data hasil ujian tidak valid atau tidak ditemukan.');
+          return;
         }
+
+        setExamData({
+          questions: resultData.data,
+          studentName: resultData.data[0]?.siswa_name || 'Siswa',
+        });
       } catch (err) {
         console.error('❌ Gagal ambil data ringkasan:', err);
         setError('Terjadi kesalahan saat mengambil data.');
