@@ -29,7 +29,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
 
     // URL default
-    final String url = 'http://192.168.0.13:3000';
+    final String url = 'https://rushless-mobile-config.faeznz.my.id';
     _currentUrl = url;
 
     _controller = WebViewController()
@@ -513,8 +513,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                           ),
                           children: [
                             const TextSpan(
-                              text:
-                                  'Aplikasi ini dalam mode pengembangan, ',
+                              text: 'Aplikasi ini dalam mode pengembangan, ',
                             ),
                             TextSpan(
                               text: 'buka kunci',
@@ -665,17 +664,17 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           actions: [
             if (!_isLocked) // Hanya tampilkan saat tidak locked
               ...[
-                IconButton(
-                  icon: const Icon(Icons.arrow_forward),
-                  onPressed: _canGoForward ? _goForward : null,
-                  tooltip: 'Forward',
-                ),
-                IconButton(
-                  icon: const Icon(Icons.refresh),
-                  onPressed: _reload,
-                  tooltip: 'Reload',
-                ),
-              ],
+              IconButton(
+                icon: const Icon(Icons.arrow_forward),
+                onPressed: _canGoForward ? _goForward : null,
+                tooltip: 'Forward',
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: _reload,
+                tooltip: 'Reload',
+              ),
+            ],
           ],
         ),
         body: Column(
