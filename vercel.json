@@ -11,10 +11,7 @@
       "src": "/(.*)",
       "dest": "RUSHLESS-BE-MOBILE/api/index.js"
     }
-  ],
-  "env": {
-    "MONGODB_URI": "@rushless-be-mobile-mongodb-uri"
-  }
+  ]
 }
 
 
