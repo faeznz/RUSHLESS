@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "rushless_apk" "\0"
+            VALUE "FileDescription", "Rushless App" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "rushless_apk" "\0"
+            VALUE "InternalName", "Rushless App" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2025 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "rushless_apk.exe" "\0"
-            VALUE "ProductName", "rushless_apk" "\0"
+            VALUE "OriginalFilename", "RushlessApp.exe" "\0"
+            VALUE "ProductName", "Rushless App" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

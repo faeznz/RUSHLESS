@@ -58,6 +58,7 @@ export default function ExamQuestion() {
       // ⬅️ panggil ulang fetch soal supaya jawaban siswa up-to-date
       fetchSoal(courseId, userId);
       window.location.reload();
+      console.log("locked");
     } catch (err) {
       console.error("❌ Gagal mulai ujian:", err);
       alert("Gagal memulai ujian, coba lagi.");
@@ -77,6 +78,7 @@ export default function ExamQuestion() {
       if (res.data.tampilkanHasil) {
         setHasilUjian(res.data); // simpan hasil
         setShowHasilPopup(true); // tampilkan popup
+        console.log("unlocked");
       } else {
         navigate("/home"); // langsung ke home
       }

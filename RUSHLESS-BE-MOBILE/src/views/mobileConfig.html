@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mobile Config Editor</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 480px;
+        margin: 40px auto;
+        padding: 0 16px;
+      }
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+      }
+      input {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 12px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+        box-sizing: border-box;
+      }
+      button {
+        padding: 10px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        background-color: #2563eb;
+        color: white;
+        font-weight: bold;
+      }
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      .status {
+        margin-top: 12px;
+        min-height: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Mobile Config Editor</h2>
+    <form id="config-form">
+      <label for="link_web">Link Web</label>
+      <input id="link_web" name="link_web" type="text" placeholder="https://..." />
+      <button type="submit">Simpan</button>
+      <div class="status" id="status"></div>
+    </form>
+
+    <script>
+      const apiBase = "/api/config/mobile";
+      const form = document.getElementById("config-form");
+      const input = document.getElementById("link_web");
+      const statusBox = document.getElementById("status");
+
+      async function loadConfig() {
+        try {
+          const response = await fetch(apiBase);
+          if (!response.ok) {
+            throw new Error("Config belum tersedia.");
+          }
+          const data = await response.json();
+          input.value = data.link_web || "";
+        } catch (error) {
+          statusBox.textContent = error.message;
+          statusBox.style.color = "crimson";
+        }
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const link_web = input.value.trim();
+
+        if (!link_web) {
+          statusBox.textContent = "Link tidak boleh kosong.";
+          statusBox.style.color = "crimson";
+          return;
+        }
+
+        form.querySelector("button").disabled = true;
+        statusBox.textContent = "Menyimpan...";
+        statusBox.style.color = "#2563eb";
+
+        try {
+          const response = await fetch(apiBase, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ link_web })
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.message || "Gagal menyimpan.");
+          }
+
+          statusBox.textContent = data.message || "Berhasil disimpan.";
+          statusBox.style.color = "green";
+        } catch (error) {
+          statusBox.textContent = error.message;
+          statusBox.style.color = "crimson";
+        } finally {
+          form.querySelector("button").disabled = false;
+        }
+      });
+
+      loadConfig();
+    </script>
+  </body>
+</html>
+
