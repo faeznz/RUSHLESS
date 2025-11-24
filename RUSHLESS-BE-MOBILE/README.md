@@ -43,3 +43,9 @@ Jika data belum ada di koleksi MongoDB, endpoint akan mengembalikan status `404`
 
 Akses `http://localhost:4000/admin/mobile-config` untuk membuka form sederhana yang bisa membaca dan mengubah nilai `link_web` melalui endpoint di atas.
 
+## Deploy ke Vercel
+
+- Endpoint serverless otomatis akan memakai file `api/index.js`.
+- Pastikan environment variable `MONGODB_URI` sudah di-set pada projek Vercel.
+- Konfigurasi runtime berada di `vercel.json`, yang menginstruksikan Vercel menjalankan fungsi dengan Node.js 20.
+
