@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
 import 'splash_screen.dart';
+import 'package:flutter/services.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Fullscreen immersive sticky (sembunyikan status bar dan nav bar)
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+
+  // Kunci orientasi jika perlu (mis. portrait only)
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+  ]);
+
   runApp(const MyApp());
 }
 
