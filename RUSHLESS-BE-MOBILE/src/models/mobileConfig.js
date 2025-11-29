@@ -6,6 +6,11 @@ const mobileConfigSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true
+    },
+    pin_app: {
+      type: String,
+      required: true,
+      trim: true
     }
   },
   {

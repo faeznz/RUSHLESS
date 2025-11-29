@@ -48,14 +48,17 @@
     <form id="config-form">
       <label for="link_web">Link Web</label>
       <input id="link_web" name="link_web" type="text" placeholder="https://..." />
+      <label for="pin_app">Pin App</label>
+      <input id="pin_app" name="pin_app" type="text" placeholder="1234" />
       <button type="submit">Simpan</button>
-      <div class="status" id="status"></div>
+      <div class="status" id="status"></div>  
     </form>
 
     <script>
       const apiBase = "/api/config/mobile";
       const form = document.getElementById("config-form");
       const input = document.getElementById("link_web");
+      const pinAppInput = document.getElementById("pin_app");
       const statusBox = document.getElementById("status");
 
       async function loadConfig() {
@@ -66,6 +69,7 @@
           }
           const data = await response.json();
           input.value = data.link_web || "";
+          pinAppInput.value = data.pin_app || "";
         } catch (error) {
           statusBox.textContent = error.message;
           statusBox.style.color = "crimson";
@@ -75,9 +79,15 @@
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
         const link_web = input.value.trim();
-
+        const pin_app = pinAppInput.value.trim();
         if (!link_web) {
           statusBox.textContent = "Link tidak boleh kosong.";
+          statusBox.style.color = "crimson";
+          return;
+        }
+
+        if (!pin_app) {
+          statusBox.textContent = "Pin app tidak boleh kosong.";
           statusBox.style.color = "crimson";
           return;
         }
@@ -92,7 +102,7 @@
             headers: {
               "Content-Type": "application/json"
             },
-            body: JSON.stringify({ link_web })
+            body: JSON.stringify({ link_web, pin_app })
           });
 
           const data = await response.json();

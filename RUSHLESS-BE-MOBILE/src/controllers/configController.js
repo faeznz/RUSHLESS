@@ -11,7 +11,8 @@ export async function getMobileConfig(_req, res, next) {
     }
 
     return res.json({
-      link_web: config.link_web
+      link_web: config.link_web,
+      pin_app: config.pin_app
     });
   } catch (error) {
     next(error);
@@ -20,7 +21,7 @@ export async function getMobileConfig(_req, res, next) {
 
 export async function upsertMobileConfig(req, res, next) {
   try {
-    const { link_web } = req.body;
+    const { link_web, pin_app } = req.body;
 
     if (!link_web) {
       return res.status(400).json({
@@ -30,7 +31,7 @@ export async function upsertMobileConfig(req, res, next) {
 
     const config = await MobileConfig.findOneAndUpdate(
       {},
-      { link_web },
+      { link_web, pin_app },
       {
         new: true,
         upsert: true,
@@ -40,7 +41,8 @@ export async function upsertMobileConfig(req, res, next) {
 
     return res.json({
       message: "Konfigurasi berhasil disimpan.",
-      link_web: config.link_web
+      link_web: config.link_web,
+      pin_app: config.pin_app
     });
   } catch (error) {
     next(error);

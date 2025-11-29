@@ -337,7 +337,7 @@ class MainActivity: FlutterActivity() {
 
     private var lastSystemBarHide = 0L
     private val SYSTEM_BAR_HIDE_INTERVAL = 2000L // Hide system bars every 2 seconds
-    
+
     private val kioskRunnable = object : Runnable {
         override fun run() {
             if (!isLocked) return
@@ -346,8 +346,8 @@ class MainActivity: FlutterActivity() {
             if (!isInForeground) {
                 // App is not in foreground, bring it back (kiosk mode requirement)
                 handler.post {
-                    bringToFront()
-                }
+                bringToFront()
+            }
             }
             
             // Periodically hide system bars to prevent notification bar from appearing
